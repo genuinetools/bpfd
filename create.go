@@ -8,7 +8,7 @@ import (
 
 const createHelp = `Create one or more rules.`
 
-func (cmd *createCommand) Name() string      { return "rm" }
+func (cmd *createCommand) Name() string      { return "create" }
 func (cmd *createCommand) Args() string      { return "[OPTIONS] RULE_FILE [RULE_FILE...]" }
 func (cmd *createCommand) ShortHelp() string { return createHelp }
 func (cmd *createCommand) LongHelp() string  { return createHelp }
