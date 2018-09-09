@@ -4,7 +4,7 @@
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://godoc.org/github.com/jessfraz/bpfd)
 [![Github All Releases](https://img.shields.io/github/downloads/jessfraz/bpfd/total.svg?style=for-the-badge)](https://github.com/jessfraz/bpfd/releases)
 
-Framework for running BPF programs on Linux as a daemon. Container native.
+Framework for running BPF programs with rules on Linux as a daemon. Container native.
 
 * [Installation](README.md#installation)
    * [Binaries](README.md#binaries)
@@ -27,7 +27,7 @@ $ go get github.com/jessfraz/bpfd
 
 ```console
 $ bpfd -h
-bpfd -  Framework for running BPF programs on Linux as a daemon.
+bpfd -  Framework for running BPF programs with rules on Linux as a daemon.
 
 Usage: bpfd <command>
 
@@ -37,8 +37,9 @@ Flags:
 
 Commands:
 
+  rm       Create one or more rules.
   daemon   Start the daemon.
-  ls       List programs.
-  rm       Remove one or more programs.
+  ls       List rules.
+  rm       Remove one or more rules.
   version  Show the version information.
 ```

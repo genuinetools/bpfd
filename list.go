@@ -5,7 +5,7 @@ import (
 	"flag"
 )
 
-const listHelp = `List programs.`
+const listHelp = `List rules.`
 
 func (cmd *listCommand) Name() string      { return "ls" }
 func (cmd *listCommand) Args() string      { return "[OPTIONS]" }
