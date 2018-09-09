@@ -36,7 +36,7 @@ const (
 
 	uint32Max = 4294967295
 
-	cgroupContainerID = ":(/docker/|/kube*/.*/|/system.slice/docker-/rkt/systemd-nspawn/lxc/lxc-libvirt/garden/podman)([[:xdigit:]]{64})(.scope|$)"
+	cgroupContainerID = ":(/docker/|/kube.*/.*/|/kube.*/.*/.*/.*/|/system.slice/docker-|/machine.slice/machine-rkt-|/machine.slice/machine-|/lxc/|/lxc-libvirt/|/garden/|/podman/)([[:alnum:]\\-]{1,64})(.scope|$)"
 )
 
 var (
@@ -112,6 +112,9 @@ func getContainerID(input string) string {
 	if len(strings.TrimSpace(input)) < 1 {
 		return ""
 	}
+
+	// rkt encodes the dashes as ascii, replace them.
+	input = strings.Replace(input, `\x2d`, "-", -1)
 
 	lines := strings.Split(input, "\n")
 	for _, line := range lines {

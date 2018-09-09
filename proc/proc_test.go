@@ -45,39 +45,86 @@ func TestGetContainerIDAndRuntime(t *testing.T) {
 		},
 		"kubernetes": {
 			expectedRuntime: RuntimeKubernetes,
-			expectedID:      "",
-			input:           ``,
+			expectedID:      "74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47",
+			input: `12:perf_event:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+11:freezer:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+10:pids:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+9:net_cls,net_prio:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+8:memory:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+7:cpuset:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+6:devices:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+5:blkio:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+4:rdma:/
+3:hugetlb:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+2:cpu,cpuacct:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47
+1:name=systemd:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47`,
 		},
 		"lxc": {
 			expectedRuntime: RuntimeLXC,
-			expectedID:      "",
-			input:           ``,
+			expectedID:      "debian2",
+			input: `10:cpuset:/lxc/debian2
+9:pids:/lxc/debian2
+8:devices:/lxc/debian2
+7:net_cls,net_prio:/lxc/debian2
+6:freezer:/lxc/debian2
+5:blkio:/lxc/debian2
+4:memory:/lxc/debian2
+3:cpu,cpuacct:/lxc/debian2
+2:perf_event:/lxc/debian2
+1:name=systemd:/lxc/debian2`,
 		},
 		"nspawn": {
-			expectedRuntime: RuntimeNspawn,
-			expectedID:      "",
-			input:           ``,
+			expectedRuntime: "", // since this variable is in $container
+			expectedID:      "nspawntest",
+			input: `10:cpuset:/
+9:pids:/machine.slice/machine-nspawntest.scope
+8:devices:/machine.slice/machine-nspawntest.scope
+7:net_cls,net_prio:/
+6:freezer:/user/root/0
+5:blkio:/machine.slice/machine-nspawntest.scope
+4:memory:/machine.slice/machine-nspawntest.scope
+3:cpu,cpuacct:/machine.slice/machine-nspawntest.scope
+2:perf_event:/
+1:name=systemd:/machine.slice/machine-nspawntest.scope`,
 		},
 		"rkt": {
 			expectedRuntime: RuntimeRkt,
-			expectedID:      "",
-			input:           ``,
+			expectedID:      "bfb7d57e-80ff-4ef8-b602-9b907b3f3a38",
+			input: `10:cpuset:/
+9:pids:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice/debian.service
+8:devices:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice/debian.service
+7:net_cls,net_prio:/
+6:freezer:/user/root/0
+5:blkio:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice
+4:memory:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice
+3:cpu,cpuacct:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice
+2:perf_event:/
+1:name=systemd:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice/debian.service`,
 		},
-		"podman": {
-			expectedRuntime: RuntimePodman,
-			expectedID:      "",
-			input:           ``,
+		"rkt host": {
+			expectedRuntime: RuntimeRkt,
+			expectedID:      "bfb7d57e-80ff-4ef8-b602-9b907b3f3a38",
+			input: `10:cpuset:/
+9:pids:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice/debian.service
+8:devices:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice/debian.service
+7:net_cls,net_prio:/
+6:freezer:/user/root/0
+5:blkio:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice
+4:memory:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice
+3:cpu,cpuacct:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice
+2:perf_event:/
+1:name=systemd:/machine.slice/machine-rkt\x2dbfb7d57e\x2d80ff\x2d4ef8\x2db602\x2d9b907b3f3a38.scope/system.slice/debian.service`,
 		},
 	}
 
 	for key, tc := range testcases {
 		runtime := getContainerRuntime(tc.input)
 		if runtime != tc.expectedRuntime {
-			t.Fatalf("[%s]: expected runtime %q, got %q", key, tc.expectedRuntime, runtime)
+			t.Errorf("[%s]: expected runtime %q, got %q", key, tc.expectedRuntime, runtime)
 		}
 		id := getContainerID(tc.input)
 		if id != tc.expectedID {
-			t.Fatalf("[%s]: expected id %q, got %q", key, tc.expectedID, id)
+			t.Errorf("[%s]: expected id %q, got %q", key, tc.expectedID, id)
 		}
 	}
 }
