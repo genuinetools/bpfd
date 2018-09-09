@@ -5,12 +5,15 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strings"
+	"unsafe"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/types"
 )
+
+import "C"
 
 const (
 	name          = "exec"
@@ -27,10 +30,10 @@ enum event_type {
 struct exec_event_t {
 	u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
-	char comm[80];
+    char comm[16];
     enum event_type type;
     char argv[128];
-    int ret;
+    int returnval;
 };
 
 BPF_PERF_OUTPUT(exec_events);
@@ -96,7 +99,7 @@ int kretprobe__sys_execve(struct pt_regs *ctx)
     data.tgid = task->real_parent->tgid;
     bpf_get_current_comm(&data.comm, sizeof(data.comm));
     data.type = EVENT_RET;
-    data.ret = PT_REGS_RC(ctx);
+    data.returnval = PT_REGS_RC(ctx);
     exec_events.perf_submit(ctx, &data, sizeof(data));
     return 0;
 };
@@ -107,9 +110,9 @@ type execEvent struct {
 	PID         uint32
 	TGID        uint32
 	Comm        [16]byte
+	Type        int32
 	Argv        [128]byte
 	ReturnValue int32
-	Type        int32
 }
 
 func init() {
@@ -177,13 +180,14 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 		return nil, fmt.Errorf("failed to decode received data: %v", err)
 	}
 
-	// Convert C string (null-terminated) to Go string
-	argv := string(event.Argv[:bytes.IndexByte(event.Argv[:], 0)])
+	argv := C.GoString((*C.char)(unsafe.Pointer(&event.Argv)))
 
 	if event.Type == 0 {
-		// This is an event arg.
-		// Append it to the other args.
-		p.argv[event.PID] = append(p.argv[event.PID], strings.TrimSpace(argv))
+		if len(argv) > 0 {
+			// This is an event arg.
+			// Append it to the other args.
+			p.argv[event.PID] = append(p.argv[event.PID], strings.TrimSpace(argv))
+		}
 		return nil, nil
 	}
 
@@ -204,6 +208,7 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 		"argv":      strings.Join(p.argv[event.PID], " "),
 		"command":   command,
 		"returnval": fmt.Sprintf("%d", event.ReturnValue),
+		"type":      fmt.Sprintf("%d", event.Type),
 	}}
 
 	// Verify the event matches for the rules.
