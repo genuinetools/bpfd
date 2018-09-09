@@ -4,7 +4,7 @@
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://godoc.org/github.com/jessfraz/bpfd)
 [![Github All Releases](https://img.shields.io/github/downloads/jessfraz/bpfd/total.svg?style=for-the-badge)](https://github.com/jessfraz/bpfd/releases)
 
-Framework for running BPF programs with rules on Linux as a daemon. Container native.
+Framework for running BPF programs with rules on Linux as a daemon. Container aware.
 
 ### NOTE: WIP If you want to contribute see "How it Works" below and consider adding more example rules or programs. Thanks!!
 
