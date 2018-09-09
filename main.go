@@ -17,7 +17,7 @@ func main() {
 	// Create a new cli program.
 	p := cli.NewProgram()
 	p.Name = "bpfd"
-	p.Description = "Framework for running bpf programs on Linux as a daemon"
+	p.Description = "Framework for running BPF programs on Linux as a daemon"
 	// Set the GitCommit and Version.
 	p.GitCommit = version.GITCOMMIT
 	p.Version = version.VERSION
