@@ -313,6 +313,15 @@ func GetNoNewPrivileges(pid int) bool {
 	return getNoNewPrivileges(readFileString(file))
 }
 
+func getNoNewPrivileges(input string) bool {
+	nnp := getStatusEntry(input, "NoNewPrivs:")
+	if nnp == "1" {
+		return true
+	}
+
+	return false
+}
+
 // GetCmdline returns the cmdline for a process.
 // If pid is less than one, it returns the cmdline for "self".
 func GetCmdline(pid int) []string {
@@ -354,15 +363,6 @@ func GetCwd(pid int) string {
 	}
 
 	return cwd
-}
-
-func getNoNewPrivileges(input string) bool {
-	nnp := getStatusEntry(input, "NoNewPrivs:")
-	if nnp == "1" {
-		return true
-	}
-
-	return false
 }
 
 // TODO: make this function more efficient and read the file line by line.
