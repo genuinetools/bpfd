@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 	"github.com/jessfraz/bpfd/program"
@@ -92,7 +93,7 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	}
 
 	// Convert C string (null-terminated) to Go string
-	command := string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)])
+	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
 	e := &program.Event{PID: event.Pid, Data: map[string]string{
 		"command": command,
