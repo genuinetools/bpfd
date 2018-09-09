@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
+	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/types"
+	"github.com/sirupsen/logrus"
 )
 
 // This is heavily based on: https://github.com/iovisor/gobpf/blob/master/examples/bcc/bash_readline/bash_readline.go
@@ -16,18 +18,29 @@ const (
 	name          = "bashreadline"
 	source string = `
 #include <uapi/linux/ptrace.h>
+#include <linux/sched.h>
+
 struct readline_event_t {
         u32 pid;
+        u32 tgid;
         char comm[80];
 } __attribute__((packed));
 BPF_PERF_OUTPUT(readline_events);
 int get_return_value(struct pt_regs *ctx) {
         struct readline_event_t event = {};
-        u32 pid;
+		struct task_struct *task;
+
         if (!PT_REGS_RC(ctx))
                 return 0;
-        pid = bpf_get_current_pid_tgid();
-        event.pid = pid;
+
+		event.pid = bpf_get_current_pid_tgid() & 0xffffffff;
+		task = (struct task_struct *)bpf_get_current_task();
+
+		// Some kernels, like Ubuntu 4.13.0-generic, return 0
+		// as the real_parent->tgid.
+		// We use the get_ppid function as a fallback in those cases. (#1883)
+		event.tgid = task->real_parent->tgid;
+
         bpf_probe_read(&event.comm, sizeof(event.comm), (void *)PT_REGS_RC(ctx));
         readline_events.perf_submit(ctx, &event, sizeof(event));
         return 0;
@@ -36,7 +49,8 @@ int get_return_value(struct pt_regs *ctx) {
 )
 
 type readlineEvent struct {
-	Pid  uint32
+	PID  uint32
+	TGID uint32
 	Comm [80]byte
 }
 
@@ -95,12 +109,16 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	// Convert C string (null-terminated) to Go string
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
-	e := &program.Event{PID: event.Pid, Data: map[string]string{
+	runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
+	logrus.Infof("runtime: %s", runtime)
+
+	e := &program.Event{PID: event.PID, TGID: event.TGID, Data: map[string]string{
 		"command": command,
 	}}
 
-	// Verify the search filters for the rules.
-	if program.Match(rules, e.Data) {
+	// Verify the event matches for the rules.
+	if program.Match(rules, e.Data, runtime) {
+		e.Data["runtime"] = string(runtime)
 		return e, nil
 	}
 

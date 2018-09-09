@@ -100,6 +100,7 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 				logrus.WithFields(logrus.Fields{
 					"program": p,
 					"pid":     fmt.Sprintf("%d", event.PID),
+					"tgid":    fmt.Sprintf("%d", event.TGID),
 				}).Infof("%#v", event.Data)
 			}
 		}(p, prog, progRules)

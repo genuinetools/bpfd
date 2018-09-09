@@ -82,10 +82,14 @@ var (
 
 // GetContainerRuntime returns the container runtime the process is running in.
 // If pid is less than one, it returns the runtime for "self".
-func GetContainerRuntime(pid int) ContainerRuntime {
+func GetContainerRuntime(tgid, pid int) ContainerRuntime {
 	file := "/proc/self/cgroup"
 	if pid > 0 {
-		file = fmt.Sprintf("/proc/%d/cgroup", pid)
+		if tgid > 0 {
+			file = fmt.Sprintf("/proc/%d/task/%d/cgroup", tgid, pid)
+		} else {
+			file = fmt.Sprintf("/proc/%d/cgroup", pid)
+		}
 	}
 
 	// read the cgroups file

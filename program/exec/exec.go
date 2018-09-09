@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
+	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/types"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -25,7 +27,7 @@ enum event_type {
 
 struct exec_event_t {
 	u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
-    u32 ppid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
+    u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
 	char comm[80];
     enum event_type type;
     char argv[128];
@@ -57,13 +59,13 @@ int kprobe__sys_execve(struct pt_regs *ctx, const char *filename,
 	struct exec_event_t data = {};
     struct task_struct *task;
 
-	data.pid = bpf_get_current_pid_tgid() >> 32;
+	data.pid = bpf_get_current_pid_tgid() & 0xffffffff;
     task = (struct task_struct *)bpf_get_current_task();
 
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
     // as the real_parent->tgid.
     // We use the get_ppid function as a fallback in those cases. (#1883)
-    data.ppid = task->real_parent->tgid;
+    data.tgid = task->real_parent->tgid;
     bpf_get_current_comm(&data.comm, sizeof(data.comm));
     data.type = EVENT_ARG;
     __submit_arg(ctx, (void *)filename, &data);
@@ -81,16 +83,18 @@ int kprobe__sys_execve(struct pt_regs *ctx, const char *filename,
 out:
     return 0;
 }
+
 int kretprobe__sys_execve(struct pt_regs *ctx)
 {
 	struct exec_event_t data = {};
     struct task_struct *task;
     data.pid = bpf_get_current_pid_tgid() >> 32;
     task = (struct task_struct *)bpf_get_current_task();
+
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
     // as the real_parent->tgid.
     // We use the get_ppid function as a fallback in those cases. (#1883)
-    data.ppid = task->real_parent->tgid;
+    data.tgid = task->real_parent->tgid;
     bpf_get_current_comm(&data.comm, sizeof(data.comm));
     data.type = EVENT_RET;
     data.ret = PT_REGS_RC(ctx);
@@ -101,8 +105,8 @@ int kretprobe__sys_execve(struct pt_regs *ctx)
 )
 
 type execEvent struct {
-	Pid         uint32
-	PPid        uint32
+	PID         uint32
+	TGID        uint32
 	Comm        [16]byte
 	Argv        [128]byte
 	ReturnValue int32
@@ -180,7 +184,7 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	if event.Type == 0 {
 		// This is an event arg.
 		// Append it to the other args.
-		p.argv[event.Pid] = append(p.argv[event.Pid], strings.TrimSpace(argv))
+		p.argv[event.PID] = append(p.argv[event.PID], strings.TrimSpace(argv))
 		return nil, nil
 	}
 
@@ -193,16 +197,20 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
 	// Delete from the array of argv.
-	delete(p.argv, event.Pid)
+	delete(p.argv, event.PID)
 
-	e := &program.Event{PID: event.Pid, Data: map[string]string{
-		"argv":      strings.Join(p.argv[event.Pid], " "),
+	runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
+	logrus.Infof("runtime: %s", runtime)
+
+	e := &program.Event{PID: event.PID, TGID: event.TGID, Data: map[string]string{
+		"argv":      strings.Join(p.argv[event.PID], " "),
 		"command":   command,
 		"returnval": fmt.Sprintf("%d", event.ReturnValue),
 	}}
 
-	// Verify the search filters for the rules.
-	if program.Match(rules, e.Data) {
+	// Verify the event matches for the rules.
+	if program.Match(rules, e.Data, runtime) {
+		e.Data["runtime"] = string(runtime)
 		return e, nil
 	}
 

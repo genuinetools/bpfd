@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/types"
 	"github.com/sirupsen/logrus"
 )
@@ -33,6 +34,7 @@ type Program interface {
 // Event defines the data struct for holding event data.
 type Event struct {
 	PID  uint32
+	TGID uint32
 	Data map[string]string
 }
 
@@ -78,25 +80,51 @@ func UnloadAll() {
 	}
 }
 
-// Match checks if the search events contains the values from data.
-func Match(rules []types.Rule, data map[string]string) bool {
-	hasKey := false
+// Match checks the rules search and filter properties against the data from
+// the event.
+// TODO: combine so we are not iterating over the rules twice.
+func Match(rules []types.Rule, data map[string]string, pidRuntime proc.ContainerRuntime) bool {
+	hasSearch := false
+	hasFilter := false
+	correctRuntime := false
+	foundSearch := false
 
 	for _, rule := range rules {
-		for key, ogValue := range data {
-			s, _ := rule.SearchEvents[key]
-			for _, find := range s.Values {
-				hasKey = true
-				if strings.Contains(ogValue, find) {
+		for _, runtime := range rule.FilterEvents.ContainerRuntimes {
+			hasFilter = true
+			if pidRuntime == runtime {
+				correctRuntime = true
+				if foundSearch {
+					// return early
 					return true
 				}
 			}
 		}
+
+		for key, ogValue := range data {
+			s, _ := rule.SearchEvents[key]
+			for _, find := range s.Values {
+				hasSearch = true
+				if strings.Contains(ogValue, find) {
+					foundSearch = true
+					if correctRuntime {
+						// return early
+						return true
+					}
+				}
+			}
+		}
+
 	}
 
-	if !hasKey {
-		// In the case that we do not have any keys for searching then we can
+	if !hasSearch && !hasFilter {
+		// In the case that we do not have any for searches or filters then we can
 		// return true to return all events.
+		return true
+	}
+
+	if correctRuntime && foundSearch {
+		// This is the case where everything matched.
 		return true
 	}
 
