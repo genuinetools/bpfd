@@ -20,32 +20,28 @@ const (
 #include <uapi/linux/ptrace.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
-
 #define ARGSIZE  128
-
+#define MAXARG 20
 enum event_type {
     EVENT_ARG,
     EVENT_RET,
 };
-
-struct exec_event_t {
-	u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
+struct data_t {
+    u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
     char comm[TASK_COMM_LEN];
     enum event_type type;
     char argv[ARGSIZE];
-    int returnval;
+    int retval;
 };
-
-BPF_PERF_OUTPUT(exec_events);
-
-static int __submit_arg(struct pt_regs *ctx, void *ptr, struct exec_event_t *data)
+BPF_PERF_OUTPUT(events);
+static int __submit_arg(struct pt_regs *ctx, void *ptr, struct data_t *data)
 {
     bpf_probe_read(data->argv, sizeof(data->argv), ptr);
-    exec_events.perf_submit(ctx, data, sizeof(struct exec_event_t));
+    events.perf_submit(ctx, data, sizeof(struct data_t));
     return 1;
 }
-static int submit_arg(struct pt_regs *ctx, void *ptr, struct exec_event_t *data)
+static int submit_arg(struct pt_regs *ctx, void *ptr, struct data_t *data)
 {
     const char *argp = NULL;
     bpf_probe_read(&argp, sizeof(argp), ptr);
@@ -54,58 +50,51 @@ static int submit_arg(struct pt_regs *ctx, void *ptr, struct exec_event_t *data)
     }
     return 0;
 }
-
-int kprobe__sys_execve(struct pt_regs *ctx,
+int syscall__execve(struct pt_regs *ctx,
     const char __user *filename,
     const char __user *const __user *__argv,
     const char __user *const __user *__envp)
 {
-
-	struct exec_event_t data = {};
+    // create data here and pass to submit_arg to save stack space (#555)
+    struct data_t data = {};
     struct task_struct *task;
-
-	data.pid = bpf_get_current_pid_tgid() & 0xffffffff;
+    data.pid = bpf_get_current_pid_tgid() >> 32;
     task = (struct task_struct *)bpf_get_current_task();
-
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
     // as the real_parent->tgid.
-    // We use the get_ppid function as a fallback in those cases. (#1883)
+    // We use the get_tgid function as a fallback in those cases. (#1883)
     data.tgid = task->real_parent->tgid;
     bpf_get_current_comm(&data.comm, sizeof(data.comm));
     data.type = EVENT_ARG;
     __submit_arg(ctx, (void *)filename, &data);
-
     // skip first arg, as we submitted filename
     #pragma unroll
-    for (int i = 1; i < 20; i++) {
+    for (int i = 1; i < MAXARG; i++) {
         if (submit_arg(ctx, (void *)&__argv[i], &data) == 0)
              goto out;
     }
-
     // handle truncated argument list
     char ellipsis[] = "...";
     __submit_arg(ctx, (void *)ellipsis, &data);
 out:
     return 0;
 }
-
-int kretprobe__sys_execve(struct pt_regs *ctx)
+int do_ret_sys_execve(struct pt_regs *ctx)
 {
-	struct exec_event_t data = {};
+    struct data_t data = {};
     struct task_struct *task;
     data.pid = bpf_get_current_pid_tgid() >> 32;
     task = (struct task_struct *)bpf_get_current_task();
-
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
     // as the real_parent->tgid.
-    // We use the get_ppid function as a fallback in those cases. (#1883)
+    // We use the get_tgid function as a fallback in those cases. (#1883)
     data.tgid = task->real_parent->tgid;
     bpf_get_current_comm(&data.comm, sizeof(data.comm));
     data.type = EVENT_RET;
-    data.returnval = PT_REGS_RC(ctx);
-    exec_events.perf_submit(ctx, &data, sizeof(data));
+    data.retval = PT_REGS_RC(ctx);
+    events.perf_submit(ctx, &data, sizeof(data));
     return 0;
-};
+}
 `
 )
 
@@ -144,7 +133,7 @@ func (p *bpfprogram) String() string {
 func (p *bpfprogram) Load() error {
 	p.module = bpf.NewModule(source, []string{})
 
-	execKprobe, err := p.module.LoadKprobe("kprobe__sys_execve")
+	execKprobe, err := p.module.LoadKprobe("syscall__execve")
 	if err != nil {
 		return fmt.Errorf("load sys_execve kprobe failed: %v", err)
 	}
@@ -155,7 +144,7 @@ func (p *bpfprogram) Load() error {
 		return fmt.Errorf("attach sys_execve kprobe: %v", err)
 	}
 
-	execKretprobe, err := p.module.LoadKprobe("kretprobe__sys_execve")
+	execKretprobe, err := p.module.LoadKprobe("do_ret_sys_execve")
 	if err != nil {
 		return fmt.Errorf("load sys_execve kretprobe failed: %v", err)
 	}
@@ -165,7 +154,7 @@ func (p *bpfprogram) Load() error {
 		return fmt.Errorf("attach sys_execve kretprobe: %v", err)
 	}
 
-	table := bpf.NewTable(p.module.TableId("exec_events"), p.module)
+	table := bpf.NewTable(p.module.TableId("events"), p.module)
 
 	p.perfMap, err = bpf.InitPerfMap(table, p.channel)
 	if err != nil {
@@ -187,12 +176,6 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 		index = 128
 	}
 	argv := strings.TrimSpace(string(event.Argv[:index]))
-	/*var argv string
-	b := C.GoBytes(unsafe.Pointer(&event.Argv), 128)
-	if err := binary.Read(bytes.NewReader(b), binary.LittleEndian, &argv); err != nil {
-		return nil, fmt.Errorf("failed to decode args: %v", err)
-	}
-	argv = strings.TrimSpace(argv)*/
 
 	if event.Type == 0 {
 		if len(argv) > 0 {
