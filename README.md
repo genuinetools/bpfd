@@ -6,7 +6,7 @@
 
 Framework for running BPF programs with rules on Linux as a daemon. Container native.
 
-**NOTE: WIP SLOW YOUR ROLL AS WE FIGURE SHIT OUT.**
+### NOTE: WIP If you want to contribute see "How it Works" below and consider adding more example rules or programs. Thanks!!
 
 ##### How it Works
 
