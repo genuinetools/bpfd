@@ -12,9 +12,9 @@ import (
 	"github.com/jessfraz/bpfd/types"
 )
 
-// This is heavily based on: https://github.com/iovisor/gobpf/blob/master/examples/bcc/bash_readline/bash_readline.go
 const (
-	name          = "bashreadline"
+	name = "bashreadline"
+	// This is heavily based on: https://github.com/iovisor/gobpf/blob/master/examples/bcc/bash_readline/bash_readline.go
 	source string = `
 #include <uapi/linux/ptrace.h>
 #include <linux/sched.h>

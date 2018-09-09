@@ -19,6 +19,7 @@ import (
 	// Register the builtin programs.
 	_ "github.com/jessfraz/bpfd/program/bashreadline"
 	_ "github.com/jessfraz/bpfd/program/exec"
+	_ "github.com/jessfraz/bpfd/program/open"
 )
 
 const daemonHelp = `Start the daemon.`

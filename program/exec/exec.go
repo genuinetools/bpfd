@@ -12,10 +12,9 @@ import (
 	"github.com/jessfraz/bpfd/types"
 )
 
-import "C"
-
 const (
-	name          = "exec"
+	name = "exec"
+	// This is heavily based on: https://github.com/iovisor/bcc/blob/master/tools/execsnoop.py
 	source string = `
 #include <uapi/linux/ptrace.h>
 #include <linux/sched.h>

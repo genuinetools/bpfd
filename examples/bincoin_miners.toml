@@ -1,0 +1,8 @@
+program = "exec"
+
+[searchEvents]
+  [searchEvents.command]
+  values = ["miner"]
+
+[filterEvents]
+  containerRuntimes = ["docker","kube"]
