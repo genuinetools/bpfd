@@ -80,15 +80,25 @@ func UnloadAll() {
 
 // Match checks if the search events contains the values from data.
 func Match(rules []types.Rule, data map[string]string) bool {
+	hasKey := false
+
 	for _, rule := range rules {
 		for key, ogValue := range data {
 			s, _ := rule.SearchEvents[key]
 			for _, find := range s.Values {
+				hasKey = true
 				if strings.Contains(ogValue, find) {
 					return true
 				}
 			}
 		}
 	}
+
+	if !hasKey {
+		// In the case that we do not have any keys for searching then we can
+		// return true to return all events.
+		return true
+	}
+
 	return false
 }

@@ -6,6 +6,7 @@ import (
 
 // Rule defines a rule to notify on.
 type Rule struct {
+	Name         string            `toml:"name,omitempty"`
 	Program      string            `toml:"program,omitempty"`
 	SearchEvents map[string]Search `toml:"searchEvents,omitempty"`
 	FilterEvents Filter            `toml:"filterEvents,omitempty"`

@@ -13,6 +13,7 @@ import (
 
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/rules"
+	"github.com/jessfraz/bpfd/types"
 	"github.com/sirupsen/logrus"
 
 	// Register the builtin programs.
@@ -63,10 +64,11 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	for _, file := range fi {
 		files = append(files, filepath.Join(cmd.rulesDirectory, file.Name()))
 	}
-	rules, err := rules.Parse(files...)
+	rules, names, err := rules.Parse(files...)
 	if err != nil {
 		return fmt.Errorf("reading rules files from directory %s failed: %v", cmd.rulesDirectory, err)
 	}
+	logrus.Infof("Loaded rules: %s", strings.Join(names, ", "))
 
 	// List all the compiled in programs.
 	programs := program.List()
@@ -83,7 +85,7 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 
 		progRules, _ := rules[p]
 
-		go func(p string, prog program.Program) {
+		go func(p string, prog program.Program, progRules []types.Rule) {
 			for {
 				// Watch the events for the program.
 				event, err := prog.WatchEvent(progRules)
@@ -100,7 +102,7 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 					"pid":     fmt.Sprintf("%d", event.PID),
 				}).Infof("%#v", event.Data)
 			}
-		}(p, prog)
+		}(p, prog, progRules)
 
 		// Start the program.
 		prog.Start()
