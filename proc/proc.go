@@ -335,6 +335,27 @@ func GetEnviron(pid int) []string {
 	return parseProcFile(readFile(file))
 }
 
+// GetCwd returns the current working directory for the process.
+// If pid is less than one, it returns the current working directory for "self".
+func GetCwd(pid int) string {
+	file := "/proc/self/cwd"
+	if pid > 0 {
+		file = fmt.Sprintf("/proc/%d/cwd", pid)
+	}
+
+	cwd, err := os.Readlink(file)
+	if err != nil {
+		if os.IsPermission(err) {
+			// Ignore the permission errors or the logs are noisy.
+			return ""
+		}
+		// Ignore errors in general.
+		return ""
+	}
+
+	return cwd
+}
+
 func getNoNewPrivileges(input string) bool {
 	nnp := getStatusEntry(input, "NoNewPrivs:")
 	if nnp == "1" {
