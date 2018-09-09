@@ -8,7 +8,7 @@ Framework for running BPF programs with rules on Linux as a daemon. Container na
 
 ### NOTE: WIP If you want to contribute see "How it Works" below and consider adding more example rules or programs. Thanks!!
 
-##### How it Works
+### How it Works
 
 Currently the programs are in the [programs/ folder](programs). The idea is
 that you can add any tracers you would like and then create [rules](examples) for
