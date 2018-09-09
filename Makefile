@@ -20,8 +20,8 @@ ifneq ($(GITUNTRACKEDCHANGES),)
 	GITCOMMIT := $(GITCOMMIT)-dirty
 endif
 CTIMEVAR=-X $(PKG)/version.GITCOMMIT=$(GITCOMMIT) -X $(PKG)/version.VERSION=$(VERSION)
-GO_LDFLAGS=-ldflags "-w $(CTIMEVAR) -extldflags -ltinfo"
-GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -extldflags '-static -ltinfo'"
+GO_LDFLAGS=-ldflags "-w $(CTIMEVAR) -extldflags -lterminfo"
+GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -extldflags '-static -lterminfo'"
 
 # Set our default go compiler
 GO := go
