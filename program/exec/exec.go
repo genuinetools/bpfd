@@ -209,6 +209,7 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	// Verify the event matches for the rules.
 	if program.Match(rules, e.Data, runtime) {
 		e.Data["runtime"] = string(runtime)
+		e.Data["container_id"] = proc.GetContainerID(int(event.PID))
 		return e, nil
 	}
 
