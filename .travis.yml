@@ -1,0 +1,58 @@
+language: go
+sudo: false
+go:
+  - 1.10.x
+before_install:
+  - go get github.com/golang/lint/golint
+  - go get honnef.co/go/tools/cmd/staticcheck
+jobs:
+  include:
+    - script: make all
+    - stage: Run Test Coverage
+      script: make cover
+      after_success: bash <(curl -s https://codecov.io/bash)
+    - stage: Build Release
+      script:
+        - make release
+        - echo "Deploying to GitHub releases ..."
+      deploy:
+        provider: releases
+        file:
+          - cross/bpfd-darwin-amd64
+          - cross/bpfd-darwin-amd64.md5
+          - cross/bpfd-darwin-amd64.sha256
+          - cross/bpfd-darwin-386
+          - cross/bpfd-darwin-386.md5
+          - cross/bpfd-darwin-386.sha256
+          - cross/bpfd-freebsd-amd64
+          - cross/bpfd-freebsd-amd64.md5
+          - cross/bpfd-freebsd-amd64.sha256
+          - cross/bpfd-freebsd-386
+          - cross/bpfd-freebsd-386.md5
+          - cross/bpfd-freebsd-386.sha256
+          - cross/bpfd-linux-arm
+          - cross/bpfd-linux-arm.md5
+          - cross/bpfd-linux-arm.sha256
+          - cross/bpfd-linux-arm64
+          - cross/bpfd-linux-arm64.md5
+          - cross/bpfd-linux-arm64.sha256
+          - cross/bpfd-linux-amd64
+          - cross/bpfd-linux-amd64.md5
+          - cross/bpfd-linux-amd64.sha256
+          - cross/bpfd-linux-386
+          - cross/bpfd-linux-386.md5
+          - cross/bpfd-linux-386.sha256
+          - cross/bpfd-solaris-amd64
+          - cross/bpfd-solaris-amd64.md5
+          - cross/bpfd-solaris-amd64.sha256
+          - cross/bpfd-windows-amd64
+          - cross/bpfd-windows-amd64.md5
+          - cross/bpfd-windows-amd64.sha256
+          - cross/bpfd-windows-386
+          - cross/bpfd-windows-386.md5
+          - cross/bpfd-windows-386.sha256
+        skip_cleanup: true
+        on:
+          tags: true
+        api_key:
+          secure: "BNAyNmcLUFQg/ua24FDrBna8MyKHAzUEwHQuglxp4rlp+4CDuFyRWI03N9XnzdOXvl0NnFLwpp154xPhw3O1oqHvEbBnAKZ5yEXtzmXMFlUxBlQa7QJcgFapkyUeNM7FrSr9Pz8TDWGQ8ajRZUSuKJq/NK9geqS55BpxfnvQWfl5BpGsV4D0XM+QDyTbOfdnsCjxsP2T6b7h5v5Yd3xbR5CDlj8kIUxB+ccPQiRz7knnH7v7JLeE4yiee79bwuiOHFJ7RHu8YOZM6f4JDhNwqr4N/qA2m1wyBR+mIt23LxtSpgTx5IAcTdlMvU3Ny7zV1j3R5JmWClxa+tgUZ4FaEfURa8LJ9adWwV9X3HItFaLe5ABpZUSQSDvqz1A6H4qD3SVZMOIrK1y38sYzeuU6BAlTZYtn3Btu1BCTSI8yymqbVBn9siW+Y+JKHsBQs9/7yyI2CC8v4jU54lHnz6NHE58Pc4PgOX8rZTmgn6gLLBLtmJeirjejnPoMTfK/DdX2w5vGTzHxrmuy+0NpHcbsSARvOAnI8Q9fUce3yOI+lVRWFq3v5rK+UTkXzhC7mQcv5yVsHI1CXQf900PX63T4TwHarUQun1+D527RslOSmcCedHXFpuSO4P1cxX2ffj7B4WpaY2hRoJcQAHT6JDdl34oaWt90NLdxh6ZFmQLEWY8="
