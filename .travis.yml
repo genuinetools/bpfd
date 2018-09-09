@@ -21,39 +21,9 @@ jobs:
       deploy:
         provider: releases
         file:
-          - cross/bpfd-darwin-amd64
-          - cross/bpfd-darwin-amd64.md5
-          - cross/bpfd-darwin-amd64.sha256
-          - cross/bpfd-darwin-386
-          - cross/bpfd-darwin-386.md5
-          - cross/bpfd-darwin-386.sha256
-          - cross/bpfd-freebsd-amd64
-          - cross/bpfd-freebsd-amd64.md5
-          - cross/bpfd-freebsd-amd64.sha256
-          - cross/bpfd-freebsd-386
-          - cross/bpfd-freebsd-386.md5
-          - cross/bpfd-freebsd-386.sha256
-          - cross/bpfd-linux-arm
-          - cross/bpfd-linux-arm.md5
-          - cross/bpfd-linux-arm.sha256
-          - cross/bpfd-linux-arm64
-          - cross/bpfd-linux-arm64.md5
-          - cross/bpfd-linux-arm64.sha256
           - cross/bpfd-linux-amd64
           - cross/bpfd-linux-amd64.md5
           - cross/bpfd-linux-amd64.sha256
-          - cross/bpfd-linux-386
-          - cross/bpfd-linux-386.md5
-          - cross/bpfd-linux-386.sha256
-          - cross/bpfd-solaris-amd64
-          - cross/bpfd-solaris-amd64.md5
-          - cross/bpfd-solaris-amd64.sha256
-          - cross/bpfd-windows-amd64
-          - cross/bpfd-windows-amd64.md5
-          - cross/bpfd-windows-amd64.sha256
-          - cross/bpfd-windows-386
-          - cross/bpfd-windows-386.md5
-          - cross/bpfd-windows-386.sha256
         skip_cleanup: true
         on:
           tags: true
