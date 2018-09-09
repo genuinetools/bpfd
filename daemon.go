@@ -12,8 +12,9 @@ import (
 	"github.com/jessfraz/bpfd/program"
 	"github.com/sirupsen/logrus"
 
-	// register the bashreadline program
+	// Register the builtin programs.
 	_ "github.com/jessfraz/bpfd/program/bashreadline"
+	_ "github.com/jessfraz/bpfd/program/exec"
 )
 
 const daemonHelp = `Start the daemon.`
@@ -65,6 +66,10 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 				event, err := prog.WatchEvent()
 				if err != nil {
 					logrus.Warnf("watch event for program %s failed: %v", p, err)
+				}
+
+				if event == nil {
+					continue
 				}
 
 				logrus.WithFields(logrus.Fields{
