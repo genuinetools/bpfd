@@ -59,10 +59,23 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 			return fmt.Errorf("loading program %s failed: %v", p, err)
 		}
 
-		// Watch the events for the program.
-		if err := prog.WatchEvents(); err != nil {
-			return fmt.Errorf("starting watch events for program %s failed: %v", p, err)
-		}
+		go func() {
+			for {
+				// Watch the events for the program.
+				event, err := prog.WatchEvent()
+				if err != nil {
+					logrus.Warnf("watch event for program %s failed: %v", p, err)
+				}
+
+				logrus.WithFields(logrus.Fields{
+					"program": p,
+					"pid":     fmt.Sprintf("%d", event.PID),
+				}).Infof("%#v", event.Data)
+			}
+		}()
+
+		// Start the program.
+		prog.Start()
 		logrus.Infof("Watching events for plugin %s", p)
 	}
 

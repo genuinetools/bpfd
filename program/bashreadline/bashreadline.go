@@ -7,7 +7,6 @@ import (
 
 	bpf "github.com/iovisor/gobpf/bcc"
 	"github.com/jessfraz/bpfd/program"
-	"github.com/sirupsen/logrus"
 )
 
 // This is heavily based on: https://github.com/iovisor/gobpf/blob/master/examples/bcc/bash_readline/bash_readline.go
@@ -83,34 +82,29 @@ func (p *bpfprogram) Load() error {
 	return nil
 }
 
-func (p *bpfprogram) WatchEvents() error {
-	fmt.Printf("[bashreadline]: %10s\t%s\n", "PID", "COMMAND")
-	go func() {
-		var event readlineEvent
-		for {
-			data := <-p.channel
-			err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event)
-			if err != nil {
-				logrus.Errorf("failed to decode received data: %v", err)
-				continue
-			}
+func (p *bpfprogram) WatchEvent() (*program.Event, error) {
+	var event readlineEvent
+	data := <-p.channel
+	err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode received data: %v", err)
+	}
 
-			// Convert C string (null-terminated) to Go string
-			comm := string(event.Str[:bytes.IndexByte(event.Str[:], 0)])
-			fmt.Printf("[bashreadline]: %10d\t%s\n", event.Pid, comm)
-		}
-	}()
+	// Convert C string (null-terminated) to Go string
+	comm := string(event.Str[:bytes.IndexByte(event.Str[:], 0)])
 
-	p.perfMap.Start()
-	return nil
+	return &program.Event{PID: event.Pid, Data: map[string]string{"cmdline": comm}}, nil
 }
 
-func (p *bpfprogram) Unload() error {
+func (p *bpfprogram) Start() {
+	p.perfMap.Start()
+}
+
+func (p *bpfprogram) Unload() {
 	if p.perfMap != nil {
 		p.perfMap.Stop()
 	}
 	if p.module != nil {
 		p.module.Close()
 	}
-	return nil
 }

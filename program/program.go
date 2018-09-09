@@ -2,6 +2,8 @@ package program
 
 import (
 	"fmt"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -19,9 +21,17 @@ type Program interface {
 	// Load creates the bpf module and starts collecting the data for the program.
 	Load() error
 	// Unload closes the bpf module and all the probes that all attached to it.
-	Unload() error
-	// WatchEvents starts the go routine to watch the events for the program.
-	WatchEvents() error
+	Unload()
+	// WatchEvent defines the function to watch the events for the program.
+	WatchEvent() (*Event, error)
+	// Start starts the map for the program.
+	Start()
+}
+
+// Event defines the data struct for holding event data.
+type Event struct {
+	PID  uint32
+	Data map[string]string
 }
 
 // Init initialized the program map.
@@ -62,5 +72,6 @@ func UnloadAll() {
 	for p := range programs {
 		prog, _ := Get(p)
 		prog.Unload()
+		logrus.Infof("Successfully unloaded program: %s", p)
 	}
 }
