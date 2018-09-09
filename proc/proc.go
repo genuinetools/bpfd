@@ -2,6 +2,7 @@
 package proc
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -88,7 +89,7 @@ func GetContainerRuntime(pid int) ContainerRuntime {
 	}
 
 	// read the cgroups file
-	a := readFile(file)
+	a := readFileString(file)
 	runtime := getContainerRuntime(a)
 	if runtime != RuntimeNotFound {
 		return runtime
@@ -108,7 +109,7 @@ func GetContainerRuntime(pid int) ContainerRuntime {
 	// PID 1 might have dropped this information into a file in /run.
 	// Read from /run/systemd/container since it is better than accessing /proc/1/environ,
 	// which needs CAP_SYS_PTRACE
-	a = readFile("/run/systemd/container")
+	a = readFileString("/run/systemd/container")
 	runtime = getContainerRuntime(a)
 	if runtime != RuntimeNotFound {
 		return runtime
@@ -139,7 +140,7 @@ func GetContainerID(pid int) string {
 		file = fmt.Sprintf("/proc/%d/cgroup", pid)
 	}
 
-	return getContainerID(readFile(file))
+	return getContainerID(readFileString(file))
 }
 
 func getContainerID(input string) string {
@@ -169,7 +170,7 @@ func GetAppArmorProfile(pid int) string {
 		file = fmt.Sprintf("/proc/%d/attr/current", pid)
 	}
 
-	f := readFile(file)
+	f := readFileString(file)
 	if f == "" {
 		return apparmorUnconfined
 	}
@@ -192,7 +193,7 @@ func GetUserNamespaceInfo(pid int) (bool, []UserMapping) {
 		file = fmt.Sprintf("/proc/%d/uid_map", pid)
 	}
 
-	f := readFile(file)
+	f := readFileString(file)
 	if len(f) < 0 {
 		// user namespace is uninitialized
 		return true, nil
@@ -274,13 +275,12 @@ func GetCapabilities(pid int) (map[string][]string, error) {
 // for a process.
 // If pid is less than one, it returns the seccomp enforcing mode for "self".
 func GetSeccompEnforcingMode(pid int) SeccompMode {
-	// Read from /proc/self/status Linux 3.8+
 	file := "/proc/self/status"
 	if pid > 0 {
 		file = fmt.Sprintf("/proc/%d/status", pid)
 	}
 
-	return getSeccompEnforcingMode(readFile(file))
+	return getSeccompEnforcingMode(readFileString(file))
 }
 
 func getSeccompEnforcingMode(input string) SeccompMode {
@@ -305,13 +305,34 @@ func getSeccompEnforcingMode(input string) SeccompMode {
 // for a process.
 // If pid is less than one, it returns if set for "self".
 func GetNoNewPrivileges(pid int) bool {
-	// Read from /proc/self/status Linux 3.8+
 	file := "/proc/self/status"
 	if pid > 0 {
 		file = fmt.Sprintf("/proc/%d/status", pid)
 	}
 
-	return getNoNewPrivileges(readFile(file))
+	return getNoNewPrivileges(readFileString(file))
+}
+
+// GetCmdline returns the cmdline for a process.
+// If pid is less than one, it returns the cmdline for "self".
+func GetCmdline(pid int) []string {
+	file := "/proc/self/cmdline"
+	if pid > 0 {
+		file = fmt.Sprintf("/proc/%d/cmdline", pid)
+	}
+
+	return parseProcFile(readFile(file))
+}
+
+// GetEnviron returns the environ for a process.
+// If pid is less than one, it returns the environ for "self".
+func GetEnviron(pid int) []string {
+	file := "/proc/self/environ"
+	if pid > 0 {
+		file = fmt.Sprintf("/proc/%d/environ", pid)
+	}
+
+	return parseProcFile(readFile(file))
 }
 
 func getNoNewPrivileges(input string) bool {
@@ -348,15 +369,17 @@ func fileExists(file string) bool {
 	return false
 }
 
-func readFile(file string) string {
+func readFile(file string) []byte {
 	if !fileExists(file) {
-		return ""
+		return []byte{}
 	}
 
-	b, err := ioutil.ReadFile(file)
-	if err != nil {
-		return ""
-	}
+	b, _ := ioutil.ReadFile(file)
+	return b
+}
+
+func readFileString(file string) string {
+	b := readFile(file)
 	return strings.TrimSpace(string(b))
 }
 
@@ -368,4 +391,20 @@ func deleteEmpty(s []string) []string {
 		}
 	}
 	return r
+}
+
+func parseProcFile(data []byte) []string {
+	if len(data) < 1 {
+		return nil
+	}
+	if data[len(data)-1] == 0 {
+		data = data[:len(data)-1]
+	}
+	parts := bytes.Split(data, []byte{0})
+	var strParts []string
+	for _, p := range parts {
+		strParts = append(strParts, string(p))
+	}
+
+	return strParts
 }
