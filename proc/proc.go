@@ -1,8 +1,7 @@
 // Package proc provides tools for inspecting proc.
-package container
+package proc
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,40 +13,75 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// ContainerRuntime is the type for the various container runtime strings.
+type ContainerRuntime string
+
+// SeccompMode is the type for the various seccomp mode strings.
+type SeccompMode string
+
 const (
 	// RuntimeDocker is the string for the docker runtime.
-	RuntimeDocker = "docker"
+	RuntimeDocker ContainerRuntime = "docker"
 	// RuntimeRkt is the string for the rkt runtime.
-	RuntimeRkt = "rkt"
+	RuntimeRkt ContainerRuntime = "rkt"
 	// RuntimeNspawn is the string for the systemd-nspawn runtime.
-	RuntimeNspawn = "systemd-nspawn"
+	RuntimeNspawn ContainerRuntime = "systemd-nspawn"
 	// RuntimeLXC is the string for the lxc runtime.
-	RuntimeLXC = "lxc"
+	RuntimeLXC ContainerRuntime = "lxc"
 	// RuntimeLXCLibvirt is the string for the lxc-libvirt runtime.
-	RuntimeLXCLibvirt = "lxc-libvirt"
+	RuntimeLXCLibvirt ContainerRuntime = "lxc-libvirt"
 	// RuntimeOpenVZ is the string for the openvz runtime.
-	RuntimeOpenVZ = "openvz"
+	RuntimeOpenVZ ContainerRuntime = "openvz"
 	// RuntimeKubernetes is the string for the kubernetes runtime.
-	RuntimeKubernetes = "kube"
+	RuntimeKubernetes ContainerRuntime = "kube"
 	// RuntimeGarden is the string for the garden runtime.
-	RuntimeGarden = "garden"
+	RuntimeGarden ContainerRuntime = "garden"
 	// RuntimePodman is the string for the podman runtime.
-	RuntimePodman = "podman"
+	RuntimePodman ContainerRuntime = "podman"
+	// RuntimeNotFound is the string for when no container runtime is found.
+	RuntimeNotFound ContainerRuntime = "not-found"
+
+	// SeccompModeDisabled is equivalent to "0" in the /proc/{pid}/status file.
+	SeccompModeDisabled SeccompMode = "disabled"
+	// SeccompModeStrict is equivalent to "1" in the /proc/{pid}/status file.
+	SeccompModeStrict SeccompMode = "strict"
+	// SeccompModeFiltering is equivalent to "2" in the /proc/{pid}/status file.
+	SeccompModeFiltering SeccompMode = "filtering"
+
+	apparmorUnconfined = "unconfined"
 
 	uint32Max = 4294967295
 
 	cgroupContainerID = ":(/docker/|/kube.*/.*/|/kube.*/.*/.*/.*/|/system.slice/docker-|/machine.slice/machine-rkt-|/machine.slice/machine-|/lxc/|/lxc-libvirt/|/garden/|/podman/)([[:alnum:]\\-]{1,64})(.scope|$)"
+	statusFileValue   = ":(.*)"
 )
 
 var (
-	runtimes = []string{RuntimeDocker, RuntimeRkt, RuntimeNspawn, RuntimeLXC, RuntimeLXCLibvirt, RuntimeOpenVZ, RuntimeKubernetes, RuntimeGarden, RuntimePodman}
+	runtimes = []ContainerRuntime{
+		RuntimeDocker,
+		RuntimeRkt,
+		RuntimeNspawn,
+		RuntimeLXC,
+		RuntimeLXCLibvirt,
+		RuntimeOpenVZ,
+		RuntimeKubernetes,
+		RuntimeGarden,
+		RuntimePodman,
+	}
+
+	seccompModes = map[string]SeccompMode{
+		"0": SeccompModeDisabled,
+		"1": SeccompModeStrict,
+		"2": SeccompModeFiltering,
+	}
 
 	cgroupContainerIDRegex = regexp.MustCompile(cgroupContainerID)
+	statusFileValueRegex   = regexp.MustCompile(statusFileValue)
 )
 
 // GetContainerRuntime returns the container runtime the process is running in.
 // If pid is less than one, it returns the runtime for "self".
-func GetContainerRuntime(pid int) string {
+func GetContainerRuntime(pid int) ContainerRuntime {
 	file := "/proc/self/cgroup"
 	if pid > 0 {
 		file = fmt.Sprintf("/proc/%d/cgroup", pid)
@@ -56,7 +90,7 @@ func GetContainerRuntime(pid int) string {
 	// read the cgroups file
 	a := readFile(file)
 	runtime := getContainerRuntime(a)
-	if len(runtime) > 0 {
+	if runtime != RuntimeNotFound {
 		return runtime
 	}
 
@@ -67,7 +101,7 @@ func GetContainerRuntime(pid int) string {
 
 	a = os.Getenv("container")
 	runtime = getContainerRuntime(a)
-	if len(runtime) > 0 {
+	if runtime != RuntimeNotFound {
 		return runtime
 	}
 
@@ -76,25 +110,25 @@ func GetContainerRuntime(pid int) string {
 	// which needs CAP_SYS_PTRACE
 	a = readFile("/run/systemd/container")
 	runtime = getContainerRuntime(a)
-	if len(runtime) > 0 {
+	if runtime != RuntimeNotFound {
 		return runtime
 	}
 
-	return ""
+	return RuntimeNotFound
 }
 
-func getContainerRuntime(input string) string {
+func getContainerRuntime(input string) ContainerRuntime {
 	if len(strings.TrimSpace(input)) < 1 {
-		return ""
+		return RuntimeNotFound
 	}
 
 	for _, runtime := range runtimes {
-		if strings.Contains(input, runtime) {
+		if strings.Contains(input, string(runtime)) {
 			return runtime
 		}
 	}
 
-	return ""
+	return RuntimeNotFound
 }
 
 // GetContainerID returns the container ID for a process if it's running in a container.
@@ -127,9 +161,9 @@ func getContainerID(input string) string {
 	return ""
 }
 
-// AppArmorProfile determines the apparmor profile for a process.
-// If pid is less than one, it returns the apparmor profile for "self".
-func AppArmorProfile(pid int) string {
+// GetAppArmorProfile determines the AppArmor profile for a process.
+// If pid is less than one, it returns the AppArmor profile for "self".
+func GetAppArmorProfile(pid int) string {
 	file := "/proc/self/attr/current"
 	if pid > 0 {
 		file = fmt.Sprintf("/proc/%d/attr/current", pid)
@@ -137,7 +171,7 @@ func AppArmorProfile(pid int) string {
 
 	f := readFile(file)
 	if f == "" {
-		return "none"
+		return apparmorUnconfined
 	}
 	return f
 }
@@ -149,9 +183,10 @@ type UserMapping struct {
 	Range       int64
 }
 
-// UserNamespace determines if the process is running in a UserNamespace and returns the mappings if so.
-// If pid is less than one, it returns the runtime for "self".
-func UserNamespace(pid int) (bool, []UserMapping) {
+// GetUserNamespaceInfo determines if the process is running in a UserNamespace
+// and returns the mappings if true.
+// If pid is less than one, it returns the user namespace info for "self".
+func GetUserNamespaceInfo(pid int) (bool, []UserMapping) {
 	file := "/proc/self/uid_map"
 	if pid > 0 {
 		file = fmt.Sprintf("/proc/%d/uid_map", pid)
@@ -205,9 +240,9 @@ func readUserMappings(f string) (iuserNS bool, mappings []UserMapping, err error
 	return true, mappings, nil
 }
 
-// Capabilities returns the allowed capabilities for the process.
-// If pid is less than one, it returns the runtime for "self".
-func Capabilities(pid int) (map[string][]string, error) {
+// GetCapabilities returns the allowed capabilities for the process.
+// If pid is less than one, it returns the capabilities for "self".
+func GetCapabilities(pid int) (map[string][]string, error) {
 	allCaps := capability.List()
 
 	caps, err := capability.NewPid(pid)
@@ -235,54 +270,75 @@ func Capabilities(pid int) (map[string][]string, error) {
 	return allowedCaps, nil
 }
 
-// SeccompEnforcingMode returns the seccomp enforcing level (disabled, filtering, strict)
+// GetSeccompEnforcingMode returns the seccomp enforcing level (disabled, filtering, strict)
 // for a process.
-// If pid is less than one, it returns the runtime for "self".
-// TODO: make this function more efficient and read the file line by line.
-func SeccompEnforcingMode(pid int) (string, error) {
+// If pid is less than one, it returns the seccomp enforcing mode for "self".
+func GetSeccompEnforcingMode(pid int) SeccompMode {
 	// Read from /proc/self/status Linux 3.8+
 	file := "/proc/self/status"
 	if pid > 0 {
 		file = fmt.Sprintf("/proc/%d/status", pid)
 	}
 
-	f := readFile(file)
+	return getSeccompEnforcingMode(readFile(file))
+}
 
-	// Pre linux 3.8
-	if !strings.Contains(f, "Seccomp") {
-		// Check if Seccomp is supported, via CONFIG_SECCOMP.
-		if err := unix.Prctl(unix.PR_GET_SECCOMP, 0, 0, 0, 0); err != unix.EINVAL {
-			// Make sure the kernel has CONFIG_SECCOMP_FILTER.
-			if err := unix.Prctl(unix.PR_SET_SECCOMP, unix.SECCOMP_MODE_FILTER, 0, 0, 0); err != unix.EINVAL {
-				return "strict", nil
-			}
-		}
-		return "disabled", nil
+func getSeccompEnforcingMode(input string) SeccompMode {
+	mode := getStatusEntry(input, "Seccomp:")
+	sm, ok := seccompModes[mode]
+	if ok {
+		return sm
 	}
 
+	// Pre linux 3.8, check if Seccomp is supported, via CONFIG_SECCOMP.
+	if err := unix.Prctl(unix.PR_GET_SECCOMP, 0, 0, 0, 0); err != unix.EINVAL {
+		// Make sure the kernel has CONFIG_SECCOMP_FILTER.
+		if err := unix.Prctl(unix.PR_SET_SECCOMP, unix.SECCOMP_MODE_FILTER, 0, 0, 0); err != unix.EINVAL {
+			return SeccompModeStrict
+		}
+	}
+
+	return SeccompModeDisabled
+}
+
+// GetNoNewPrivileges returns if no_new_privileges is set
+// for a process.
+// If pid is less than one, it returns if set for "self".
+func GetNoNewPrivileges(pid int) bool {
+	// Read from /proc/self/status Linux 3.8+
+	file := "/proc/self/status"
+	if pid > 0 {
+		file = fmt.Sprintf("/proc/%d/status", pid)
+	}
+
+	return getNoNewPrivileges(readFile(file))
+}
+
+func getNoNewPrivileges(input string) bool {
+	nnp := getStatusEntry(input, "NoNewPrivs:")
+	if nnp == "1" {
+		return true
+	}
+
+	return false
+}
+
+// TODO: make this function more efficient and read the file line by line.
+func getStatusEntry(input, find string) string {
 	// Split status file string by line
-	statusMappings := strings.Split(f, "\n")
+	statusMappings := strings.Split(input, "\n")
 	statusMappings = deleteEmpty(statusMappings)
 
-	mode := "-1"
 	for _, line := range statusMappings {
-		if strings.Contains(line, "Seccomp:") {
-			mode = string(line[len(line)-1])
+		if strings.Contains(line, find) {
+			matches := statusFileValueRegex.FindStringSubmatch(line)
+			if len(matches) > 1 {
+				return strings.TrimSpace(matches[1])
+			}
 		}
 	}
 
-	seccompModes := map[string]string{
-		"0": "disabled",
-		"1": "strict",
-		"2": "filtering",
-	}
-
-	seccompMode, ok := seccompModes[mode]
-	if !ok {
-		return "", errors.New("could not retrieve seccomp filtering status")
-	}
-
-	return seccompMode, nil
+	return ""
 }
 
 func fileExists(file string) bool {

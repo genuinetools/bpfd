@@ -1,4 +1,4 @@
-package container
+package proc
 
 import (
 	"testing"
@@ -7,10 +7,13 @@ import (
 func TestGetContainerIDAndRuntime(t *testing.T) {
 	testcases := map[string]struct {
 		name            string
-		expectedRuntime string
+		expectedRuntime ContainerRuntime
 		expectedID      string
 		input           string
 	}{
+		"empty": {
+			expectedRuntime: RuntimeNotFound,
+		},
 		"typical docker": {
 			expectedRuntime: RuntimeDocker,
 			expectedID:      "68fad1f9e0985989408aff30e7b83e7dada1d235ff46a22c5465ca193ddf0fac",
@@ -28,7 +31,7 @@ func TestGetContainerIDAndRuntime(t *testing.T) {
 0::/system.slice/containerd.service`,
 		},
 		"uncontainerized process": {
-			expectedRuntime: "",
+			expectedRuntime: RuntimeNotFound,
 			expectedID:      "",
 			input: `11:pids:/system.slice/ssh.service
 10:devices:/system.slice/ssh.service
@@ -60,7 +63,7 @@ func TestGetContainerIDAndRuntime(t *testing.T) {
 1:name=systemd:/kubepods/burstable/pod98051bd2-a5fa-11e8-9bb9-0a58ac1f31f2/74998d19bd3c7423744214c344c6e814d19b7908a92f165f9d58243073a27a47`,
 		},
 		"lxc": {
-			expectedRuntime: RuntimeLXC,
+			expectedRuntime: RuntimeLXC, // this is usually in $container for lxc
 			expectedID:      "debian2",
 			input: `10:cpuset:/lxc/debian2
 9:pids:/lxc/debian2
@@ -74,7 +77,7 @@ func TestGetContainerIDAndRuntime(t *testing.T) {
 1:name=systemd:/lxc/debian2`,
 		},
 		"nspawn": {
-			expectedRuntime: "", // since this variable is in $container
+			expectedRuntime: RuntimeNotFound, // since this variable is in $container
 			expectedID:      "nspawntest",
 			input: `10:cpuset:/
 9:pids:/machine.slice/machine-nspawntest.scope
@@ -162,5 +165,260 @@ func TestGetUserMappings(t *testing.T) {
 
 	if len(expected) != len(mappings) {
 		t.Fatalf("expected length %d got %d", len(expected), len(mappings))
+	}
+}
+
+func TestGetSeccompEnforceMode(t *testing.T) {
+	testcases := map[string]struct {
+		name         string
+		expectedMode SeccompMode
+		input        string
+	}{
+		"empty": {
+			expectedMode: SeccompModeStrict, // since it is enabled by prctl
+		},
+		"none": {
+			expectedMode: SeccompModeStrict, // since it is enabled by prctl
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+		"zero": {
+			expectedMode: SeccompModeDisabled,
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        0
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+		"one": {
+			expectedMode: SeccompModeStrict,
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        1
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+		"two": {
+			expectedMode: SeccompModeFiltering,
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        2
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+		"invalid": {
+			expectedMode: SeccompModeStrict, // since it is enabled by prctl
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        17
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+	}
+
+	for key, tc := range testcases {
+		mode := getSeccompEnforcingMode(tc.input)
+		if mode != tc.expectedMode {
+			t.Errorf("[%s]: expected mode %q, got %q", key, tc.expectedMode, mode)
+		}
+	}
+}
+
+func TestGetNoNewPrivileges(t *testing.T) {
+	testcases := map[string]struct {
+		name     string
+		expected bool
+		input    string
+	}{
+		"empty": {},
+		"none": {
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+		"zero": {
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     0
+Seccomp:        0
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+		"one": {
+			expected: true,
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     1
+Seccomp:        1
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+		"invalid": {
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     17
+Seccomp:        17
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+	}
+
+	for key, tc := range testcases {
+		nnp := getNoNewPrivileges(tc.input)
+		if nnp != tc.expected {
+			t.Errorf("[%s]: expected mode %t, got %t", key, tc.expected, nnp)
+		}
 	}
 }
