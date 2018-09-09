@@ -4,12 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 
 	"github.com/jessfraz/bpfd/program"
+	"github.com/jessfraz/bpfd/rules"
 	"github.com/sirupsen/logrus"
 
 	// Register the builtin programs.
@@ -26,9 +29,11 @@ func (cmd *daemonCommand) LongHelp() string  { return daemonHelp }
 func (cmd *daemonCommand) Hidden() bool      { return false }
 
 func (cmd *daemonCommand) Register(fs *flag.FlagSet) {
+	fs.StringVar(&cmd.rulesDirectory, "rules-dir", "/etc/bpfd/rules", "Directory that stores the rules files")
 }
 
 type daemonCommand struct {
+	rulesDirectory string
 }
 
 func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
@@ -46,6 +51,23 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	}()
 
 	daemon := make(chan bool)
+
+	// Get all the rules from the rule directory.
+	fi, err := ioutil.ReadDir(cmd.rulesDirectory)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("listing files in rules directory %s failed: %v", cmd.rulesDirectory, err)
+		}
+	}
+	files := []string{}
+	for _, file := range fi {
+		files = append(files, filepath.Join(cmd.rulesDirectory, file.Name()))
+	}
+	rules, err := rules.Parse(files...)
+	if err != nil {
+		return fmt.Errorf("reading rules files from directory %s failed: %v", cmd.rulesDirectory, err)
+	}
+	logrus.Infof("got rules: %#v", rules)
 
 	// List all the compiled in programs.
 	programs := program.List()
