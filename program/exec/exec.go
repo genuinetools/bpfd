@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 	"github.com/jessfraz/bpfd/program"
@@ -24,7 +25,7 @@ enum event_type {
 struct exec_event_t {
 	u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 ppid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
-	char comm[16];
+	char comm[80];
     enum event_type type;
     char argv[128];
     int ret;
@@ -115,12 +116,14 @@ type bpfprogram struct {
 	module  *bpf.Module
 	perfMap *bpf.PerfMap
 	channel chan []byte
+	argv    map[uint32][]string
 }
 
 // Init returns a new bashreadline program.
 func Init() (program.Program, error) {
 	return &bpfprogram{
 		channel: make(chan []byte),
+		argv:    map[uint32][]string{},
 	}, nil
 }
 
@@ -172,12 +175,26 @@ func (p *bpfprogram) WatchEvent() (*program.Event, error) {
 
 	// Convert C string (null-terminated) to Go string
 	argv := string(event.Argv[:bytes.IndexByte(event.Argv[:], 0)])
-	if len(argv) < 1 {
+
+	if event.Type == 0 {
+		// This is an event arg.
+		// Append it to the other args.
+		p.argv[event.Pid] = append(p.argv[event.Pid], strings.TrimSpace(argv))
 		return nil, nil
 	}
-	comm := string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)])
 
-	return &program.Event{PID: event.Pid, Data: map[string]string{"argv": argv, "comm": comm}}, nil
+	if event.Type != 1 {
+		// Return early if not a return event.
+		return nil, nil
+	}
+
+	// Convert C string (null-terminated) to Go string
+	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
+
+	// Delete from the array of argv.
+	delete(p.argv, event.Pid)
+
+	return &program.Event{PID: event.Pid, Data: map[string]string{"argv": strings.Join(p.argv[event.Pid], " "), "command": command, "returnval": fmt.Sprintf("%d", event.ReturnValue)}}, nil
 }
 
 func (p *bpfprogram) Start() {

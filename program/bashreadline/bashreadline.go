@@ -16,7 +16,7 @@ const (
 #include <uapi/linux/ptrace.h>
 struct readline_event_t {
         u32 pid;
-        char str[80];
+        char comm[80];
 } __attribute__((packed));
 BPF_PERF_OUTPUT(readline_events);
 int get_return_value(struct pt_regs *ctx) {
@@ -26,7 +26,7 @@ int get_return_value(struct pt_regs *ctx) {
                 return 0;
         pid = bpf_get_current_pid_tgid();
         event.pid = pid;
-        bpf_probe_read(&event.str, sizeof(event.str), (void *)PT_REGS_RC(ctx));
+        bpf_probe_read(&event.comm, sizeof(event.comm), (void *)PT_REGS_RC(ctx));
         readline_events.perf_submit(ctx, &event, sizeof(event));
         return 0;
 }
@@ -34,8 +34,8 @@ int get_return_value(struct pt_regs *ctx) {
 )
 
 type readlineEvent struct {
-	Pid uint32
-	Str [80]byte
+	Pid  uint32
+	Comm [80]byte
 }
 
 func init() {
@@ -91,9 +91,9 @@ func (p *bpfprogram) WatchEvent() (*program.Event, error) {
 	}
 
 	// Convert C string (null-terminated) to Go string
-	comm := string(event.Str[:bytes.IndexByte(event.Str[:], 0)])
+	command := string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)])
 
-	return &program.Event{PID: event.Pid, Data: map[string]string{"cmdline": comm}}, nil
+	return &program.Event{PID: event.Pid, Data: map[string]string{"command": command}}, nil
 }
 
 func (p *bpfprogram) Start() {
