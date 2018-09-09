@@ -2,7 +2,9 @@ package program
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/jessfraz/bpfd/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,7 +25,7 @@ type Program interface {
 	// Unload closes the bpf module and all the probes that all attached to it.
 	Unload()
 	// WatchEvent defines the function to watch the events for the program.
-	WatchEvent() (*Event, error)
+	WatchEvent(rules []types.Rule) (*Event, error)
 	// Start starts the map for the program.
 	Start()
 }
@@ -74,4 +76,19 @@ func UnloadAll() {
 		prog.Unload()
 		logrus.Infof("Successfully unloaded program: %s", p)
 	}
+}
+
+// Match checks if the search events contains the values from data.
+func Match(rules []types.Rule, data map[string]string) bool {
+	for _, rule := range rules {
+		for key, ogValue := range data {
+			s, _ := rule.SearchEvents[key]
+			for _, find := range s.Values {
+				if strings.Contains(ogValue, find) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

@@ -81,10 +81,12 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 			return fmt.Errorf("loading program %s failed: %v", p, err)
 		}
 
+		progRules, _ := rules[p]
+
 		go func(p string, prog program.Program) {
 			for {
 				// Watch the events for the program.
-				event, err := prog.WatchEvent()
+				event, err := prog.WatchEvent(progRules)
 				if err != nil {
 					logrus.Warnf("watch event for program %s failed: %v", p, err)
 				}

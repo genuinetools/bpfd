@@ -8,6 +8,7 @@ import (
 
 	bpf "github.com/iovisor/gobpf/bcc"
 	"github.com/jessfraz/bpfd/program"
+	"github.com/jessfraz/bpfd/types"
 )
 
 const (
@@ -165,7 +166,7 @@ func (p *bpfprogram) Load() error {
 	return nil
 }
 
-func (p *bpfprogram) WatchEvent() (*program.Event, error) {
+func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	var event execEvent
 	data := <-p.channel
 	err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event)
@@ -194,7 +195,19 @@ func (p *bpfprogram) WatchEvent() (*program.Event, error) {
 	// Delete from the array of argv.
 	delete(p.argv, event.Pid)
 
-	return &program.Event{PID: event.Pid, Data: map[string]string{"argv": strings.Join(p.argv[event.Pid], " "), "command": command, "returnval": fmt.Sprintf("%d", event.ReturnValue)}}, nil
+	e := &program.Event{PID: event.Pid, Data: map[string]string{
+		"argv":      strings.Join(p.argv[event.Pid], " "),
+		"command":   command,
+		"returnval": fmt.Sprintf("%d", event.ReturnValue),
+	}}
+
+	// Verify the search filters for the rules.
+	if program.Match(rules, e.Data) {
+		return e, nil
+	}
+
+	// We didn't find what we were searching for so return nil.
+	return nil, nil
 }
 
 func (p *bpfprogram) Start() {

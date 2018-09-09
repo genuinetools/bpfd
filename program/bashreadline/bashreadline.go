@@ -7,6 +7,7 @@ import (
 
 	bpf "github.com/iovisor/gobpf/bcc"
 	"github.com/jessfraz/bpfd/program"
+	"github.com/jessfraz/bpfd/types"
 )
 
 // This is heavily based on: https://github.com/iovisor/gobpf/blob/master/examples/bcc/bash_readline/bash_readline.go
@@ -82,7 +83,7 @@ func (p *bpfprogram) Load() error {
 	return nil
 }
 
-func (p *bpfprogram) WatchEvent() (*program.Event, error) {
+func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	var event readlineEvent
 	data := <-p.channel
 	err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event)
@@ -93,7 +94,17 @@ func (p *bpfprogram) WatchEvent() (*program.Event, error) {
 	// Convert C string (null-terminated) to Go string
 	command := string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)])
 
-	return &program.Event{PID: event.Pid, Data: map[string]string{"command": command}}, nil
+	e := &program.Event{PID: event.Pid, Data: map[string]string{
+		"command": command,
+	}}
+
+	// Verify the search filters for the rules.
+	if program.Match(rules, e.Data) {
+		return e, nil
+	}
+
+	// We didn't find what we were searching for so return nil.
+	return nil, nil
 }
 
 func (p *bpfprogram) Start() {
