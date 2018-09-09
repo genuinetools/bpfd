@@ -1,13 +1,13 @@
 language: go
-sudo: false
+sudo: true
 go:
   - 1.10.x
 before_install:
   - go get github.com/golang/lint/golint
   - go get honnef.co/go/tools/cmd/staticcheck
-  - apt-key adv --keyserver keyserver.ubuntu.com --recv-keys D4284CDD
+  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys D4284CDD
   - echo "deb https://repo.iovisor.org/apt/xenial xenial main" | sudo tee /etc/apt/sources.list.d/iovisor.list
-  - apt-get update && apt-get install -y bcc-tools libbcc-examples linux-headers-$(uname -r)
+  - sudo apt-get update && sudo apt-get install -y bcc-tools libbcc-examples linux-headers-$(uname -r)
 jobs:
   include:
     - script: make all
