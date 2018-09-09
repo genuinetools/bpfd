@@ -4,7 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/jessfraz/bpfd/program"
 	"github.com/sirupsen/logrus"
@@ -28,6 +31,19 @@ type daemonCommand struct {
 }
 
 func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
+	// On ^C, or SIGTERM handle exit.
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, syscall.SIGTERM)
+	go func() {
+		for sig := range c {
+			logrus.Infof("Received %s, exiting", sig.String())
+			logrus.Info("Gracefully shutting down and unloading all programs")
+			program.UnloadAll()
+			os.Exit(0)
+		}
+	}()
+
 	daemon := make(chan bool)
 
 	// List all the compiled in programs.

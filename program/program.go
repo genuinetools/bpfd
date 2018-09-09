@@ -56,3 +56,11 @@ func List() []string {
 	}
 	return keys
 }
+
+// UnloadAll unloads all the registered programs.
+func UnloadAll() {
+	for p := range programs {
+		prog, _ := Get(p)
+		prog.Unload()
+	}
+}

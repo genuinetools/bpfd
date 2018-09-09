@@ -106,7 +106,11 @@ func (p *bpfprogram) WatchEvents() error {
 }
 
 func (p *bpfprogram) Unload() error {
-	p.perfMap.Stop()
-	p.module.Close()
+	if p.perfMap != nil {
+		p.perfMap.Stop()
+	}
+	if p.module != nil {
+		p.module.Close()
+	}
 	return nil
 }
