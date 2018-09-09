@@ -31,3 +31,11 @@
 [[constraint]]
   name = "github.com/syndtr/gocapability"
   branch = "master"
+
+[[constraint]]
+  name = "github.com/BurntSushi/toml"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/iovisor/gobpf"
+  branch = "master"

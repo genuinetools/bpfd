@@ -10,6 +10,17 @@
   revision = "4038376dadd53f913de41663feae408ef23c8e8a"
 
 [[projects]]
+  branch = "master"
+  digest = "1:23140ef7a714d4f63d5fd9d85cbdff70d68b86418dd7333e852b1927e70633a8"
+  name = "github.com/iovisor/gobpf"
+  packages = [
+    "bcc",
+    "pkg/cpuonline",
+  ]
+  pruneopts = "NUT"
+  revision = "4ece6c56f93637c86338885d37e98ff0fb97b4c9"
+
+[[projects]]
   digest = "1:d15180343f618d58b83aa74baee173db241e43468d05cab897aaec6fbe007407"
   name = "github.com/jessfraz/ship"
   packages = ["version"]
@@ -43,20 +54,21 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:be111a2be1a759ab2eeacb539ad76fb906111e5aba9b16412e85b5ec892aa703"
+  digest = "1:581828cee9f0d31195c1ae52ea8935dfaec395cee6c23adc02109b892b391c2e"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "NUT"
-  revision = "917fdcba135dcbaccd57425db91723541b4427c8"
+  revision = "4526dd3c8b56729dc6b5a24d9dafb1915e89945b"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/genuinetools/pkg/cli",
+    "github.com/iovisor/gobpf/bcc",
     "github.com/jessfraz/ship/version",
     "github.com/sirupsen/logrus",
     "github.com/syndtr/gocapability/capability",

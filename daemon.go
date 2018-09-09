@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"flag"
+	"strings"
+
+	"github.com/jessfraz/bpfd/plugin"
+	"github.com/sirupsen/logrus"
 )
 
 const daemonHelp = `Start the daemon.`
@@ -20,5 +24,9 @@ type daemonCommand struct {
 }
 
 func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
+	// List all the compiled in programs.
+	programs := plugin.List()
+	logrus.Infof("Daemon compiled with programs: %s", strings.Join(programs, ", "))
+
 	return nil
 }
