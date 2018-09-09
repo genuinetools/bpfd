@@ -16,10 +16,12 @@ them.
 
 **Programs**
 
-The sames that exist today are based off a few bcc-tools programs. Writing
-these requires knowledge of BPF but you can use the tools provided here to
+The programs that exist today are based off a few
+[bcc-tools](https://github.com/iovisor/bcc) programs. Writing
+these requires knowledge of BPF but you can use the base provided here to
 create your own programs and add them in a fork, if you so wish for say an
-enterprise who doesn't want others to know what they are tracking.
+enterprise who doesn't want others to reverse engineer what they are tracing and
+how they alert.
 
 **Rules**
 
