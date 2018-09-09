@@ -10,7 +10,6 @@ import (
 	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/types"
-	"github.com/sirupsen/logrus"
 )
 
 // This is heavily based on: https://github.com/iovisor/gobpf/blob/master/examples/bcc/bash_readline/bash_readline.go
@@ -110,7 +109,6 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
 	runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
-	logrus.Infof("runtime: %s", runtime)
 
 	e := &program.Event{PID: event.PID, TGID: event.TGID, Data: map[string]string{
 		"command": command,

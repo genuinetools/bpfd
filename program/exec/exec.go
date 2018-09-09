@@ -10,7 +10,6 @@ import (
 	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/types"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -200,7 +199,6 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	delete(p.argv, event.PID)
 
 	runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
-	logrus.Infof("runtime: %s", runtime)
 
 	e := &program.Event{PID: event.PID, TGID: event.TGID, Data: map[string]string{
 		"argv":      strings.Join(p.argv[event.PID], " "),
