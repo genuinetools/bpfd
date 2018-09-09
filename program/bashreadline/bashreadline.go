@@ -1,15 +1,12 @@
-// +build bashreadline
-
 package bashreadline
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	bpf "github.com/iovisor/gobpf/bcc"
-	"github.com/jessfraz/bpfd/plugin"
+	"github.com/jessfraz/bpfd/program"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,27 +40,27 @@ type readlineEvent struct {
 }
 
 func init() {
-	plugin.Register(name, Init)
+	program.Register(name, Init)
 }
 
-type program struct {
+type bpfprogram struct {
 	module  *bpf.Module
 	perfMap *bpf.PerfMap
 	channel chan []byte
 }
 
-// Init returns a new bashreadline plugin.
-func Init() (plugin.Plugin, error) {
-	return &program{
+// Init returns a new bashreadline program.
+func Init() (program.Program, error) {
+	return &bpfprogram{
 		channel: make(chan []byte),
 	}, nil
 }
 
-func (p *program) String() string {
+func (p *bpfprogram) String() string {
 	return name
 }
 
-func (p *program) Load() error {
+func (p *bpfprogram) Load() error {
 	p.module = bpf.NewModule(source, []string{})
 
 	readlineUretprobe, err := p.module.LoadUprobe("get_return_value")
@@ -86,12 +83,9 @@ func (p *program) Load() error {
 	return nil
 }
 
-func (p *program) WatchEvents() error {
+func (p *bpfprogram) WatchEvents() error {
 	fmt.Printf("[bashreadline]: %10s\t%s\n", "PID", "COMMAND")
-	var wg sync.WaitGroup
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		var event readlineEvent
 		for {
 			data := <-p.channel
@@ -108,12 +102,10 @@ func (p *program) WatchEvents() error {
 	}()
 
 	p.perfMap.Start()
-	wg.Wait()
-	p.perfMap.Stop()
 	return nil
 }
 
-func (p *program) Unload() error {
+func (p *bpfprogram) Unload() error {
 	p.perfMap.Stop()
 	p.module.Close()
 	return nil

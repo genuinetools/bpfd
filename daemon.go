@@ -3,10 +3,14 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"strings"
 
-	"github.com/jessfraz/bpfd/plugin"
+	"github.com/jessfraz/bpfd/program"
 	"github.com/sirupsen/logrus"
+
+	// register the bashreadline program
+	_ "github.com/jessfraz/bpfd/program/bashreadline"
 )
 
 const daemonHelp = `Start the daemon.`
@@ -24,9 +28,28 @@ type daemonCommand struct {
 }
 
 func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
+	daemon := make(chan bool)
+
 	// List all the compiled in programs.
-	programs := plugin.List()
+	programs := program.List()
 	logrus.Infof("Daemon compiled with programs: %s", strings.Join(programs, ", "))
 
+	// Load all the compiled in programs.
+	for _, p := range programs {
+		// We can ignore the error below since we are using the list from our code
+		// so the program has to exist in the map.
+		prog, _ := program.Get(p)
+		if err := prog.Load(); err != nil {
+			return fmt.Errorf("loading program %s failed: %v", p, err)
+		}
+
+		// Watch the events for the program.
+		if err := prog.WatchEvents(); err != nil {
+			return fmt.Errorf("starting watch events for program %s failed: %v", p, err)
+		}
+		logrus.Infof("Watching events for plugin %s", p)
+	}
+
+	<-daemon // Block forever
 	return nil
 }
