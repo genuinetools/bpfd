@@ -371,7 +371,7 @@ func fileExists(file string) bool {
 
 func readFile(file string) []byte {
 	if !fileExists(file) {
-		return []byte{}
+		return nil
 	}
 
 	b, _ := ioutil.ReadFile(file)
@@ -380,6 +380,9 @@ func readFile(file string) []byte {
 
 func readFileString(file string) string {
 	b := readFile(file)
+	if b == nil {
+		return ""
+	}
 	return strings.TrimSpace(string(b))
 }
 
