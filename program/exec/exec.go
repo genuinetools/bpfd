@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strings"
-	"unsafe"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 	"github.com/jessfraz/bpfd/proc"
@@ -22,6 +21,8 @@ const (
 #include <linux/sched.h>
 #include <linux/fs.h>
 
+#define ARGSIZE  128
+
 enum event_type {
     EVENT_ARG,
     EVENT_RET,
@@ -30,9 +31,9 @@ enum event_type {
 struct exec_event_t {
 	u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
-    char comm[16];
+    char comm[TASK_COMM_LEN];
     enum event_type type;
-    char argv[128];
+    char argv[ARGSIZE];
     int returnval;
 };
 
@@ -54,8 +55,10 @@ static int submit_arg(struct pt_regs *ctx, void *ptr, struct exec_event_t *data)
     return 0;
 }
 
-int kprobe__sys_execve(struct pt_regs *ctx, const char *filename,
-                      const char *__argv, const char *__envp)
+int kprobe__sys_execve(struct pt_regs *ctx,
+    const char __user *filename,
+    const char __user *const __user *__argv,
+    const char __user *const __user *__envp)
 {
 
 	struct exec_event_t data = {};
@@ -175,18 +178,27 @@ func (p *bpfprogram) Load() error {
 func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	var event execEvent
 	data := <-p.channel
-	err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event)
-	if err != nil {
+	if err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event); err != nil {
 		return nil, fmt.Errorf("failed to decode received data: %v", err)
 	}
 
-	argv := C.GoString((*C.char)(unsafe.Pointer(&event.Argv)))
+	index := bytes.IndexByte(event.Argv[:], 0)
+	if index <= -1 {
+		index = 128
+	}
+	argv := strings.TrimSpace(string(event.Argv[:index]))
+	/*var argv string
+	b := C.GoBytes(unsafe.Pointer(&event.Argv), 128)
+	if err := binary.Read(bytes.NewReader(b), binary.LittleEndian, &argv); err != nil {
+		return nil, fmt.Errorf("failed to decode args: %v", err)
+	}
+	argv = strings.TrimSpace(argv)*/
 
 	if event.Type == 0 {
 		if len(argv) > 0 {
 			// This is an event arg.
 			// Append it to the other args.
-			p.argv[event.PID] = append(p.argv[event.PID], strings.TrimSpace(argv))
+			p.argv[event.PID] = append(p.argv[event.PID], argv)
 		}
 		return nil, nil
 	}
@@ -199,9 +211,6 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	// Convert C string (null-terminated) to Go string
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
-	// Delete from the array of argv.
-	delete(p.argv, event.PID)
-
 	runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
 
 	e := &program.Event{PID: event.PID, TGID: event.TGID, Data: map[string]string{
@@ -210,6 +219,9 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 		"returnval": fmt.Sprintf("%d", event.ReturnValue),
 		"type":      fmt.Sprintf("%d", event.Type),
 	}}
+
+	// Delete from the array of argv.
+	delete(p.argv, event.PID)
 
 	// Verify the event matches for the rules.
 	if program.Match(rules, e.Data, runtime) {
