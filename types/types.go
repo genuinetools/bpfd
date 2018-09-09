@@ -6,9 +6,9 @@ import (
 
 // Rule defines a rule to notify on.
 type Rule struct {
-	Program      string
-	SearchEvents Search
-	FilterEvents Filter
+	Program      string            `toml:"program,omitempty"`
+	SearchEvents map[string]Search `toml:"searchEvents,omitempty"`
+	FilterEvents Filter            `toml:"filterEvents,omitempty"`
 }
 
 // Search defines the values to be searched for.

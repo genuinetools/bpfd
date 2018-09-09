@@ -67,7 +67,6 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("reading rules files from directory %s failed: %v", cmd.rulesDirectory, err)
 	}
-	logrus.Infof("got rules: %#v", rules)
 
 	// List all the compiled in programs.
 	programs := program.List()

@@ -1,4 +1,3 @@
-[[rule]]
 program = "exec"
 
 [searchEvents]
