@@ -8,16 +8,19 @@ Framework for running BPF programs with rules on Linux as a daemon. Container aw
 
 ### NOTE: WIP If you want to contribute see "How it Works" below and consider adding more example rules or programs. Thanks!!
 
-### How it Works
+## How it Works
 
-Currently the programs are in the [program/ folder](program). The idea is
-that you can add any tracers you would like and then create [rules](examples) for
-them.
+[**Programs**](#programs) retrieve the data... 
+[**Rules**](#rules) filter the data... 
+[**Actions**](#actions) perform actions on the data.
 
-**Programs** retrieve the data... **Rules** filter the data... **Actions** perform actions on the data
+The programs are in the [program/ folder](program). 
+The idea is that you can add any tracers you would like 
+and then create [rules](examples) for the data retrieved from the programs.
+Any events with data that passes the filters will be passed on to the specified
+action.
 
-
-**Programs**
+### Programs
 
 The programs that exist today are based off a few
 [bcc-tools](https://github.com/iovisor/bcc) programs. Writing
@@ -26,7 +29,7 @@ create your own programs and add them in a fork, if you so wish for say an
 enterprise who doesn't want others to reverse engineer what they are tracing and
 how they alert.
 
-**Rules**
+### Rules
 
 These are toml files that hold some logic for what you would like to trace. You
 can search for anything returned by a `Program` in it's `map[string]string`
@@ -34,7 +37,10 @@ data struct.
 
 You can also filter based off the container runtime you would like to alert on.
 
-**Actions**
+If you provide no rules for a program, then _all_ the events will be passed to
+actions.
+
+### Actions
 
 COMING SOON
 
