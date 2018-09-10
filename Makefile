@@ -157,7 +157,7 @@ __check_defined = \
 
 
 .PHONY: test-container
-DOCKER_IMAGE := $(NAME)-dev
+DOCKER_IMAGE := r.j3ss.co/$(NAME)-dev
 test-container: ## Run a command in a test container with all the needed dependencies (ex. CMD=make test)
 	@:$(call check_defined, CMD, command to run in the container)
 	docker build --rm --force-rm -f Dockerfile.dev -t $(DOCKER_IMAGE) .

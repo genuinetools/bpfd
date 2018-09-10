@@ -1,10 +1,9 @@
-FROM debian:buster as builder
+FROM debian:buster-slim as builder
 MAINTAINER Jessica Frazelle <jess@linux.com>
 
 ENV PATH /go/bin:/usr/local/go/bin:$PATH
 ENV GOPATH /go
 
-RUN cat /etc/apt/sources.list
 # Add non-free apt sources
 RUN sed -i "s#deb http://deb.debian.org/debian buster main#deb http://deb.debian.org/debian buster main contrib non-free#g" /etc/apt/sources.list
 
@@ -71,18 +70,24 @@ RUN make \
 
 FROM debian:buster-slim
 
+# Add non-free apt sources
+RUN sed -i "s#deb http://deb.debian.org/debian buster main#deb http://deb.debian.org/debian buster main contrib non-free#g" /etc/apt/sources.list
 RUN apt-get update && apt-get install -y \
+	bison \
     ca-certificates \
 	clang \
+	cmake \
+	flex \
+	llvm \
 	make \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/bin/bpfd /usr/bin/bpfd
-COPY --from=builder /usr/src/bcc/build /usr/src/bcc/build
+COPY --from=builder /usr/src/bcc /usr/src/bcc
 COPY examples /etc/bpfd/
 
-RUN cd /usr/src/bbc/build && make install
+RUN cd /usr/src/bcc/build && make install
 
 ENTRYPOINT [ "bpfd" ]
 CMD [ "--help" ]

@@ -1,10 +1,9 @@
-FROM debian:buster
+FROM debian:buster-slim
 MAINTAINER Jessica Frazelle <jess@linux.com>
 
 ENV PATH /go/bin:/usr/local/go/bin:$PATH
 ENV GOPATH /go
 
-RUN cat /etc/apt/sources.list
 # Add non-free apt sources
 RUN sed -i "s#deb http://deb.debian.org/debian buster main#deb http://deb.debian.org/debian buster main contrib non-free#g" /etc/apt/sources.list
 
