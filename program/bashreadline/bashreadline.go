@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
-	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/types"
 )
@@ -108,23 +107,14 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	// Convert C string (null-terminated) to Go string
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
-	runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
-
 	e := &program.Event{
-		PID:              event.PID,
-		TGID:             event.TGID,
-		ContainerRuntime: runtime,
+		PID:  event.PID,
+		TGID: event.TGID,
 		Data: map[string]string{
 			"command": command,
 		}}
 
-	// Verify the event matches for the rules.
-	if program.Match(rules, e.Data, runtime) {
-		return e, nil
-	}
-
-	// We didn't find what we were searching for so return nil.
-	return nil, nil
+	return e, nil
 }
 
 func (p *bpfprogram) Start() {

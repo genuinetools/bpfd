@@ -99,11 +99,19 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 					continue
 				}
 
+				runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
+
+				// Verify the event matches for the rules.
+				if !program.Match(progRules, event.Data, runtime) {
+					// We didn't find what we were searching for so continue.
+					continue
+				}
+
 				logrus.WithFields(logrus.Fields{
 					"program":           p,
 					"pid":               fmt.Sprintf("%d", event.PID),
 					"tgid":              fmt.Sprintf("%d", event.TGID),
-					"container_runtime": string(event.ContainerRuntime),
+					"container_runtime": string(runtime),
 					"container_id":      proc.GetContainerID(int(event.TGID), int(event.PID)),
 				}).Infof("%#v", event.Data)
 			}

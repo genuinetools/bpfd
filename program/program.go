@@ -36,7 +36,8 @@ type Event struct {
 	PID              uint32
 	TGID             uint32
 	Data             map[string]string
-	ContainerRuntime proc.ContainerRuntime
+	ContainerRuntime proc.ContainerRuntime // Filled in after the program is run so you don't need to.
+	ContainerID      string                // Filled in after the program is run so you don't need to.
 }
 
 // Init initialized the program map.

@@ -67,11 +67,13 @@ below, the `Data` is of type `map[string]string` meaning any key value pair can
 be returned for the data. The rules then filter using those key value pairs.
 
 ```go
+// Event defines the data struct for holding event data.
 type Event struct {
-	PID              uint32
-	TGID             uint32
-	Data             map[string]string
-	ContainerRuntime proc.ContainerRuntime
+    PID              uint32
+    TGID             uint32
+    Data             map[string]string
+    ContainerRuntime proc.ContainerRuntime // Filled in after the program is run so you don't need to.
+    ContainerID      string                // Filled in after the program is run so you don't need to.
 }
 ```
 
