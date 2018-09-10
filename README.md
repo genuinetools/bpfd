@@ -8,6 +8,19 @@ Framework for running BPF programs with rules on Linux as a daemon. Container aw
 
 ### NOTE: WIP If you want to contribute see "How it Works" below and consider adding more example rules or programs. Thanks!!
 
+**Table of Contents**
+
+* [How it Works](README.md#how-it-works)
+   * [Programs](README.md#programs)
+   * [Rules](README.md#rules)
+   * [Actions](README.md#actions)
+ * [Installation](README.md#installation)
+      * [Binaries](README.md#binaries)
+      * [Via Go](README.md#via-go)
+      * [Via Docker](README.md#via-docker)
+ * [Usage](README.md#usage)
+
+
 ## How it Works
 
 [**Programs**](#programs) retrieve the data... 
@@ -48,18 +61,6 @@ There will also be an interface for actions. That way you can send alerts
 on the rules you set up to Slack, email, or even run arbitrary code so you can
 kill a container, pause a container, or checkpoint a container to restore it
 elsewhere without even having to login to a computer.
-
-**Table of Contents**
-
-* [How it Works](README.md#how-it-works)
-   * [Programs](README.md#programs)
-   * [Rules](README.md#rules)
-   * [Actions](README.md#actions)
- * [Installation](README.md#installation)
-      * [Binaries](README.md#binaries)
-      * [Via Go](README.md#via-go)
-      * [Via Docker](README.md#via-docker)
- * [Usage](README.md#usage)
 
 ## Installation
 
