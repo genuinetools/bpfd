@@ -9,7 +9,7 @@ before_install:
   - echo "deb https://repo.iovisor.org/apt/xenial xenial main" | sudo tee /etc/apt/sources.list.d/iovisor.list
   - echo "deb http://mirror.servers.com/ubuntu/ xenial main restricted universe" | sudo tee /etc/apt/sources.list.d/xenial.list
   - echo "deb http://security.ubuntu.com/ubuntu/ xenial-security main restricted universe" | sudo tee /etc/apt/sources.list.d/xenial.list
-  - sudo apt-get update && sudo apt-get install -y bcc-tools clang gcc libbcc-examples libncurses5-dev linux-headers-$(uname -r)
+  - sudo apt-get update && sudo apt-get install -y bcc-tools clang gcc binutils libbcc-examples libncurses5-dev linux-headers-$(uname -r)
 jobs:
   include:
     - script: make all
