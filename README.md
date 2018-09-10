@@ -15,6 +15,8 @@ that you can add any tracers you would like and then create [rules](examples) fo
 them.
 
 **Programs** retrieve the data... **Rules** filter the data... **Actions** perform actions on the data
+
+
 **Programs**
 
 The programs that exist today are based off a few
