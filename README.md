@@ -49,11 +49,17 @@ on the rules you set up to Slack, email, or even run arbitrary code so you can
 kill a container, pause a container, or checkpoint a container to restore it
 elsewhere without even having to login to a computer.
 
-* [Installation](README.md#installation)
-   * [Binaries](README.md#binaries)
-   * [Via Go](README.md#via-go)
-   * [Via Docker](README.md#via-docker)
-* [Usage](README.md#usage)
+**Table of Contents**
+
+* [How it Works](README.md#how-it-works)
+   * [Programs](README.md#programs)
+   * [Rules](README.md#rules)
+   * [Actions](README.md#actions)
+ * [Installation](README.md#installation)
+      * [Binaries](README.md#binaries)
+      * [Via Go](README.md#via-go)
+      * [Via Docker](README.md#via-docker)
+ * [Usage](README.md#usage)
 
 ## Installation
 
@@ -69,6 +75,8 @@ For installation instructions from binaries please visit the [Releases Page](htt
 ```console
 $ go get github.com/jessfraz/bpfd
 ```
+
+#### Via Docker
 
 ```console
 $ docker run --rm -it \
