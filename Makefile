@@ -20,8 +20,8 @@ ifneq ($(GITUNTRACKEDCHANGES),)
 	GITCOMMIT := $(GITCOMMIT)-dirty
 endif
 CTIMEVAR=-X $(PKG)/version.GITCOMMIT=$(GITCOMMIT) -X $(PKG)/version.VERSION=$(VERSION)
-GO_LDFLAGS=-ldflags "-w $(CTIMEVAR) -lterminfo -lcurses -lpthread"
-GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -lterminfo -lcurses -lpthread -extldflags -static"
+GO_LDFLAGS=-ldflags "-w $(CTIMEVAR)"
+GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -static"
 
 # Set our default go compiler
 GO := go
@@ -89,9 +89,9 @@ install: ## Installs the executable or package
 
 define buildpretty
 mkdir -p $(BUILDDIR)/$(1)/$(2);
-GOOS=$(1) GOARCH=$(2) CGO_ENABLED=1 $(GO) build \
+GOOS=$(1) GOARCH=$(2) CGO_ENABLED=0 $(GO) build \
 	 -o $(BUILDDIR)/$(1)/$(2)/$(NAME) \
-	 -a -tags "$(BUILDTAGS) static_build netgo" \
+	 -a -tags "$(BUILDTAGS) netgo" \
 	 -installsuffix netgo ${GO_LDFLAGS} .;
 md5sum $(BUILDDIR)/$(1)/$(2)/$(NAME) > $(BUILDDIR)/$(1)/$(2)/$(NAME).md5;
 sha256sum $(BUILDDIR)/$(1)/$(2)/$(NAME) > $(BUILDDIR)/$(1)/$(2)/$(NAME).sha256;
@@ -103,9 +103,9 @@ cross: *.go VERSION.txt ## Builds the cross-compiled binaries, creating a clean 
 	$(foreach GOOSARCH,$(GOOSARCHES), $(call buildpretty,$(subst /,,$(dir $(GOOSARCH))),$(notdir $(GOOSARCH))))
 
 define buildrelease
-GOOS=$(1) GOARCH=$(2) CGO_ENABLED=1 $(GO) build \
+GOOS=$(1) GOARCH=$(2) CGO_ENABLED=0 $(GO) build \
 	 -o $(BUILDDIR)/$(NAME)-$(1)-$(2) \
-	 -a -tags "$(BUILDTAGS) static_build netgo" \
+	 -a -tags "$(BUILDTAGS) netgo" \
 	 -installsuffix netgo ${GO_LDFLAGS} .;
 md5sum $(BUILDDIR)/$(NAME)-$(1)-$(2) > $(BUILDDIR)/$(NAME)-$(1)-$(2).md5;
 sha256sum $(BUILDDIR)/$(NAME)-$(1)-$(2) > $(BUILDDIR)/$(NAME)-$(1)-$(2).sha256;
