@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/rules"
 	"github.com/jessfraz/bpfd/types"
@@ -99,9 +100,11 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 				}
 
 				logrus.WithFields(logrus.Fields{
-					"program": p,
-					"pid":     fmt.Sprintf("%d", event.PID),
-					"tgid":    fmt.Sprintf("%d", event.TGID),
+					"program":           p,
+					"pid":               fmt.Sprintf("%d", event.PID),
+					"tgid":              fmt.Sprintf("%d", event.TGID),
+					"container_runtime": string(event.ContainerRuntime),
+					"container_id":      proc.GetContainerID(int(event.TGID), int(event.PID)),
 				}).Infof("%#v", event.Data)
 			}
 		}(p, prog, progRules)

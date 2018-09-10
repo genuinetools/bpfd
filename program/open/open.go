@@ -156,8 +156,11 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 	}
 	filename := strings.TrimSpace(string(event.Filename[:index]))
 
-	// Convert C string (null-terminated) to Go string
-	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
+	index = bytes.IndexByte(event.Comm[:], 0)
+	if index <= -1 {
+		index = 16
+	}
+	command := strings.TrimSpace(string(event.Comm[:index]))
 
 	// Ignore files with our own PID or we will have an infinite loop.
 	if strings.HasPrefix(filename, fmt.Sprintf("/proc/%d", int(event.PID))) ||
@@ -168,16 +171,18 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 
 	runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
 
-	e := &program.Event{PID: event.PID, TGID: event.TGID, Data: map[string]string{
-		"filename":  filename,
-		"command":   command,
-		"returnval": fmt.Sprintf("%d", event.ReturnValue),
-	}}
+	e := &program.Event{
+		PID:              event.PID,
+		TGID:             event.TGID,
+		ContainerRuntime: runtime,
+		Data: map[string]string{
+			"filename":  filename,
+			"command":   command,
+			"returnval": fmt.Sprintf("%d", event.ReturnValue),
+		}}
 
 	// Verify the event matches for the rules.
 	if program.Match(rules, e.Data, runtime) {
-		e.Data["runtime"] = string(runtime)
-		e.Data["container_id"] = proc.GetContainerID(int(event.PID))
 		return e, nil
 	}
 

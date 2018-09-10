@@ -138,10 +138,14 @@ func getContainerRuntime(input string) ContainerRuntime {
 
 // GetContainerID returns the container ID for a process if it's running in a container.
 // If pid is less than one, it returns the container ID for "self".
-func GetContainerID(pid int) string {
+func GetContainerID(tgid, pid int) string {
 	file := "/proc/self/cgroup"
 	if pid > 0 {
-		file = fmt.Sprintf("/proc/%d/cgroup", pid)
+		if tgid > 0 {
+			file = fmt.Sprintf("/proc/%d/task/%d/cgroup", tgid, pid)
+		} else {
+			file = fmt.Sprintf("/proc/%d/cgroup", pid)
+		}
 	}
 
 	return getContainerID(readFileString(file))

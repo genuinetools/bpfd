@@ -110,13 +110,16 @@ func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
 
 	runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
 
-	e := &program.Event{PID: event.PID, TGID: event.TGID, Data: map[string]string{
-		"command": command,
-	}}
+	e := &program.Event{
+		PID:              event.PID,
+		TGID:             event.TGID,
+		ContainerRuntime: runtime,
+		Data: map[string]string{
+			"command": command,
+		}}
 
 	// Verify the event matches for the rules.
 	if program.Match(rules, e.Data, runtime) {
-		e.Data["runtime"] = string(runtime)
 		return e, nil
 	}
 

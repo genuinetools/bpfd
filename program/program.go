@@ -33,9 +33,10 @@ type Program interface {
 
 // Event defines the data struct for holding event data.
 type Event struct {
-	PID  uint32
-	TGID uint32
-	Data map[string]string
+	PID              uint32
+	TGID             uint32
+	Data             map[string]string
+	ContainerRuntime proc.ContainerRuntime
 }
 
 // Init initialized the program map.
@@ -86,14 +87,14 @@ func UnloadAll() {
 func Match(rules []types.Rule, data map[string]string, pidRuntime proc.ContainerRuntime) bool {
 	hasSearch := false
 	hasFilter := false
-	correctRuntime := false
+	correctFilter := false
 	foundSearch := false
 
 	for _, rule := range rules {
 		for _, runtime := range rule.FilterEvents.ContainerRuntimes {
 			hasFilter = true
 			if pidRuntime == runtime {
-				correctRuntime = true
+				correctFilter = true
 				if foundSearch {
 					// return early
 					return true
@@ -107,7 +108,7 @@ func Match(rules []types.Rule, data map[string]string, pidRuntime proc.Container
 				hasSearch = true
 				if strings.Contains(ogValue, find) {
 					foundSearch = true
-					if correctRuntime {
+					if correctFilter {
 						// return early
 						return true
 					}
@@ -123,8 +124,16 @@ func Match(rules []types.Rule, data map[string]string, pidRuntime proc.Container
 		return true
 	}
 
-	if correctRuntime && foundSearch {
+	if hasSearch && hasFilter && correctFilter && foundSearch {
 		// This is the case where everything matched.
+		return true
+	}
+
+	if hasFilter && !hasSearch && correctFilter {
+		return true
+	}
+
+	if hasSearch && !hasFilter && foundSearch {
 		return true
 	}
 
