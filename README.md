@@ -14,6 +14,7 @@ Currently the programs are in the [programs/ folder](programs). The idea is
 that you can add any tracers you would like and then create [rules](examples) for
 them.
 
+**Programs** retrieve the data... **Rules** filter the data... **Actions** perform actions on the data
 **Programs**
 
 The programs that exist today are based off a few
@@ -31,11 +32,11 @@ data struct.
 
 You can also filter based off the container runtime you would like to alert on.
 
-**Notifications**
+**Actions**
 
 COMING SOON
 
-There will also be an interface for notifications. That way you can send alerts 
+There will also be an interface for actions. That way you can send alerts 
 on the rules you set up to Slack, email, or even run arbitrary code so you can
 kill a container, pause a container, or checkpoint a container to restore it
 elsewhere without even having to login to a computer.
