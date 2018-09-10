@@ -20,8 +20,10 @@ ifneq ($(GITUNTRACKEDCHANGES),)
 	GITCOMMIT := $(GITCOMMIT)-dirty
 endif
 CTIMEVAR=-X $(PKG)/version.GITCOMMIT=$(GITCOMMIT) -X $(PKG)/version.VERSION=$(VERSION)
+CLANGLIBS=-L/usr/lib/llvm-6.0/lib -L/usr/lib/llvm-6.0/lib/clang/6.0.1/lib/linux -lclangTooling -lclangFrontendTool -lclangFrontend -lclangDriver -lclangSerialization -lclangCodeGen -lclangParse -lclangSema -lclangStaticAnalyzerFrontend -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangAnalysis -lclangARCMigrate -lclangRewrite -lclangRewriteFrontend -lclangEdit -lclangAST -lclangLex -lclangBasic -lclang
+BCCLIBS=-L/usr/src/bcc/build/src/cc  -L/usr/src/bcc/build/src/cc/api  -L/usr/src/bcc/build/src/cc/frontends/clang -L/usr/src/bcc/build/src/cc/frontends/b -L/usr/src/bcc/build/src/cc/usdt -lstdc++ -lbpf -lapi-static -lb_frontend -lclang_frontend -lbcc-loader-static -lusdt-static -lbcc
 GO_LDFLAGS=-ldflags "-w $(CTIMEVAR)"
-GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -extldflags -static"
+GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -linkmode external -extldflags '-Bstatic -Wl,--whole-archive $(BCCLIBS) -Bdynamic -Wl,--no-whole-archive $(CLANGLIBS) -lelf'"
 
 # Set our default go compiler
 GO := go
@@ -76,10 +78,10 @@ cover: ## Runs go test with coverage
 	@for d in $(shell $(GO) list ./... | grep -v vendor); do \
 		$(GO) test -race -coverprofile=profile.out -covermode=atomic "$$d"; \
 		if [ -f profile.out ]; then \
-			cat profile.out >> coverage.txt; \
-			rm profile.out; \
+		cat profile.out >> coverage.txt; \
+		rm profile.out; \
 		fi; \
-	done;
+		done;
 
 .PHONY: install
 install: ## Installs the executable or package
@@ -88,7 +90,7 @@ install: ## Installs the executable or package
 
 define buildpretty
 mkdir -p $(BUILDDIR)/$(1)/$(2);
-GOOS=$(1) GOARCH=$(2) CGO_ENABLED=0 $(GO) build \
+GOOS=$(1) GOARCH=$(2) CGO_ENABLED=1 $(GO) build \
 	 -o $(BUILDDIR)/$(1)/$(2)/$(NAME) \
 	 -a -tags "$(BUILDTAGS) netgo" \
 	 -installsuffix netgo ${GO_LDFLAGS} .;
@@ -102,7 +104,7 @@ cross: *.go VERSION.txt ## Builds the cross-compiled binaries, creating a clean 
 	$(foreach GOOSARCH,$(GOOSARCHES), $(call buildpretty,$(subst /,,$(dir $(GOOSARCH))),$(notdir $(GOOSARCH))))
 
 define buildrelease
-GOOS=$(1) GOARCH=$(2) CGO_ENABLED=0 $(GO) build \
+GOOS=$(1) GOARCH=$(2) CGO_ENABLED=1 $(GO) build \
 	 -o $(BUILDDIR)/$(NAME)-$(1)-$(2) \
 	 -a -tags "$(BUILDTAGS) netgo" \
 	 -installsuffix netgo ${GO_LDFLAGS} .;
@@ -116,8 +118,8 @@ release: *.go VERSION.txt ## Builds the cross-compiled binaries, naming them in 
 	$(foreach GOOSARCH,$(GOOSARCHES), $(call buildrelease,$(subst /,,$(dir $(GOOSARCH))),$(notdir $(GOOSARCH))))
 
 .PHONY: bump-version
-BUMP := patch
-bump-version: ## Bump the version in the version file. Set BUMP to [ patch | major | minor ]
+	BUMP := patch
+	bump-version: ## Bump the version in the version file. Set BUMP to [ patch | major | minor ]
 	@$(GO) get -u github.com/jessfraz/junk/sembump # update sembump tool
 	$(eval NEW_VERSION = $(shell sembump --kind $(BUMP) $(VERSION)))
 	@echo "Bumping VERSION.txt from $(VERSION) to $(NEW_VERSION)"
@@ -144,6 +146,27 @@ clean: ## Cleanup any build binaries or packages
 	@echo "+ $@"
 	$(RM) $(NAME)
 	$(RM) -r $(BUILDDIR)
+
+check_defined = \
+				$(strip $(foreach 1,$1, \
+				$(call __check_defined,$1,$(strip $(value 2)))))
+__check_defined = \
+				  $(if $(value $1),, \
+				  $(error Undefined $1$(if $2, ($2))$(if $(value @), \
+				  required by target `$@')))
+
+
+.PHONY: test-container
+DOCKER_IMAGE := $(NAME)-dev
+test-container: ## Run a command in a test container with all the needed dependencies (ex. CMD=make test)
+	@:$(call check_defined, CMD, command to run in the container)
+	docker build --rm --force-rm -f Dockerfile.dev -t $(DOCKER_IMAGE) .
+	docker run --rm -i $(DOCKER_FLAGS) \
+		-v $(CURDIR):/go/src/$(PKG) \
+		--workdir /go/src/$(PKG) \
+		--disable-content-trust=true \
+		$(DOCKER_IMAGE) \
+		$(CMD)
 
 .PHONY: help
 help:

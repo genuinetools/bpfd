@@ -1,4 +1,4 @@
-FROM debian:buster as builder
+FROM debian:buster
 MAINTAINER Jessica Frazelle <jess@linux.com>
 
 ENV PATH /go/bin:/usr/local/go/bin:$PATH
@@ -54,35 +54,17 @@ RUN mkdir build \
 	&& cd build \
 	&& cmake .. -DCMAKE_INSTALL_PREFIX=/usr \
 	&& make \
-	&& make install \
-	&& make
+	&& make install
 
 # Install Go
 ENV GO_VERSION 1.11
 RUN curl -fsSL "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
 	| tar -xzC /usr/local
 
+# Install Go deps
+RUN go get github.com/golang/lint/golint
+RUN go get honnef.co/go/tools/cmd/staticcheck
+
 COPY . /go/src/github.com/jessfraz/bpfd
 
 WORKDIR /go/src/github.com/jessfraz/bpfd
-RUN make \
-	&& mv bpfd /usr/bin/bpfd
-
-
-FROM debian:buster-slim
-
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-	clang \
-	make \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY --from=builder /usr/bin/bpfd /usr/bin/bpfd
-COPY --from=builder /usr/src/bcc/build /usr/src/bcc/build
-COPY examples /etc/bpfd/
-
-RUN cd /usr/src/bbc/build && make install
-
-ENTRYPOINT [ "bpfd" ]
-CMD [ "--help" ]
