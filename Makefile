@@ -155,18 +155,44 @@ __check_defined = \
 				  $(error Undefined $1$(if $2, ($2))$(if $(value @), \
 				  required by target `$@')))
 
+__check_defined = $(if $(value $1),,$(error Undefined $1$(if $2, ($2))$(if $(value @),required by target `$@')))
+
+DOCKER_FLAGS := --rm -i \
+	--disable-content-trust=true
+DOCKER_FLAGS+=-v $(CURDIR):/go/src/$(PKG)
+DOCKER_FLAGS+=--workdir /go/src/$(PKG)
+
+# if this session isn't interactive, then we don't want to allocate a
+# TTY, which would fail, but if it is interactive, we do want to attach
+# so that the user can send e.g. ^C through.
+INTERACTIVE := $(shell [ -t 0 ] && echo 1 || echo 0)
+ifeq ($(INTERACTIVE), 1)
+    DOCKER_FLAGS += -t
+endif
+
+DOCKER_IMAGE := r.j3ss.co/$(NAME)-dev
+
+.PHONY: image
+image:
+	docker build --rm --force-rm -f Dockerfile.dev -t $(DOCKER_IMAGE) .
 
 .PHONY: test-container
-DOCKER_IMAGE := r.j3ss.co/$(NAME)-dev
-test-container: ## Run a command in a test container with all the needed dependencies (ex. CMD=make test)
+test-container: image ## Run a command in a test container with all the needed dependencies (ex. CMD=make test)
 	@:$(call check_defined, CMD, command to run in the container)
-	docker build --rm --force-rm -f Dockerfile.dev -t $(DOCKER_IMAGE) .
-	docker run --rm -i $(DOCKER_FLAGS) \
-		-v $(CURDIR):/go/src/$(PKG) \
-		--workdir /go/src/$(PKG) \
-		--disable-content-trust=true \
+	docker run $(DOCKER_FLAGS) \
 		$(DOCKER_IMAGE) \
 		$(CMD)
+
+GRPC_API_DIR=api/grpc
+.PHONY:protoc
+protoc: $(CURDIR)/$(GRPC_API_DIR)/api.pb.go ## Generate the protobuf files
+
+$(GRPC_API_DIR)/api.pb.go: image $(CURDIR)/$(GRPC_API_DIR)/api.proto
+	docker run $(DOCKER_FLAGS) \
+		$(DOCKER_IMAGE) \
+		protoc -I ./$(GRPC_API_DIR) \
+		./$(GRPC_API_DIR)/api.proto \
+		--go_out=plugins=grpc:$(GRPC_API_DIR)
 
 .PHONY: help
 help:

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package types;
+
+service API {
+  rpc CreateRule(CreateRuleRequest) returns (CreateRuleResponse) {}
+  rpc DeleteRule(DeleteRuleRequest) returns (DeleteRuleResponse) {}
+  rpc ListRules(ListRulesRequest) returns (ListRulesResponse) {}
+}
+
+message CreateRuleRequest {
+  Rule rule = 2; // the rule to be created
+}
+
+message CreateRuleResponse {
+}
+
+message DeleteRuleRequest {
+  string name = 1; // Name of rule
+}
+
+message DeleteRuleResponse {
+}
+
+message ListRulesRequest {
+}
+
+message Rule {
+  string name = 1; // Name of rule
+  string program = 2; // Name of program
+  map<string, Filter> filterEvents = 3; // Filters for the events
+  repeated string containerRuntimes = 4; // Container runtimes to apply the rule to
+}
+
+message Filter {
+  repeated string values = 1; // Values for the filter
+}
+
+message ListRulesResponse {
+  repeated Rule rules = 1; // List of rules
+}
