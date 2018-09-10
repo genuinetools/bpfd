@@ -21,7 +21,7 @@ ifneq ($(GITUNTRACKEDCHANGES),)
 endif
 CTIMEVAR=-X $(PKG)/version.GITCOMMIT=$(GITCOMMIT) -X $(PKG)/version.VERSION=$(VERSION)
 GO_LDFLAGS=-ldflags "-w $(CTIMEVAR)"
-GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -static"
+GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -extldflags -static"
 
 # Set our default go compiler
 GO := go
@@ -31,7 +31,6 @@ GOOSARCHES = $(shell cat .goosarch)
 
 .PHONY: build
 build: $(NAME) ## Builds a dynamic executable or package
-	llvm-config --system-libs
 
 $(NAME): $(wildcard *.go) $(wildcard */*.go) VERSION.txt
 	@echo "+ $@"
