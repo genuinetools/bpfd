@@ -54,6 +54,7 @@ RUN mkdir build \
 	&& cmake .. -DCMAKE_INSTALL_PREFIX=/usr \
 	&& make \
 	&& make install \
+	&& make clean \
 	&& make
 
 # Install Go
@@ -67,7 +68,6 @@ WORKDIR /go/src/github.com/jessfraz/bpfd
 RUN make \
 	&& mv bpfd /usr/bin/bpfd
 
-
 FROM debian:buster-slim
 
 # Add non-free apt sources
@@ -78,7 +78,11 @@ RUN apt-get update && apt-get install -y \
 	clang \
 	cmake \
 	flex \
-	llvm \
+	git \
+	libclang-dev \
+	libelf-dev \
+	libluajit-5.1-dev \
+	llvm-dev \
 	make \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*

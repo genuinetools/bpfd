@@ -46,6 +46,7 @@ elsewhere without even having to login to a computer.
 * [Installation](README.md#installation)
    * [Binaries](README.md#binaries)
    * [Via Go](README.md#via-go)
+   * [Via Docker](README.md#via-docker)
 * [Usage](README.md#usage)
 
 ## Installation
@@ -61,6 +62,15 @@ For installation instructions from binaries please visit the [Releases Page](htt
 
 ```console
 $ go get github.com/jessfraz/bpfd
+```
+
+```console
+$ docker run --rm -it \
+    --name bpfd \
+    -v /lib/modules:/lib/modules:ro \
+    -v /usr/src:/usr/src:ro \
+    --privileged \
+    r.j3ss.co/bpfd daemon
 ```
 
 ## Usage
