@@ -24,8 +24,8 @@ func TestMatch(t *testing.T) {
 		"no runtime rules false": {
 			rules: []types.Rule{
 				{
-					SearchEvents: map[string]types.Search{
-						"key": types.Search{
+					FilterEvents: map[string]types.Filter{
+						"key": types.Filter{
 							Values: []string{"thing", "blah"},
 						},
 					},
@@ -40,8 +40,8 @@ func TestMatch(t *testing.T) {
 		"no runtime rules true": {
 			rules: []types.Rule{
 				{
-					SearchEvents: map[string]types.Search{
-						"key": types.Search{
+					FilterEvents: map[string]types.Filter{
+						"key": types.Filter{
 							Values: []string{"thing", "blah", "value"},
 						},
 					},
@@ -56,9 +56,7 @@ func TestMatch(t *testing.T) {
 		"runtime rules no search false": {
 			rules: []types.Rule{
 				{
-					FilterEvents: types.Filter{
-						ContainerRuntimes: []proc.ContainerRuntime{proc.RuntimeDocker},
-					},
+					ContainerRuntimes: []proc.ContainerRuntime{proc.RuntimeDocker},
 				},
 			},
 			data: map[string]string{
@@ -70,9 +68,7 @@ func TestMatch(t *testing.T) {
 		"runtime rules no search true": {
 			rules: []types.Rule{
 				{
-					FilterEvents: types.Filter{
-						ContainerRuntimes: []proc.ContainerRuntime{proc.RuntimeDocker},
-					},
+					ContainerRuntimes: []proc.ContainerRuntime{proc.RuntimeDocker},
 				},
 			},
 			data: map[string]string{
@@ -84,14 +80,12 @@ func TestMatch(t *testing.T) {
 		"runtime rules with search false": {
 			rules: []types.Rule{
 				{
-					SearchEvents: map[string]types.Search{
-						"key": types.Search{
+					FilterEvents: map[string]types.Filter{
+						"key": types.Filter{
 							Values: []string{"thing", "blah", "value"},
 						},
 					},
-					FilterEvents: types.Filter{
-						ContainerRuntimes: []proc.ContainerRuntime{proc.RuntimeDocker},
-					},
+					ContainerRuntimes: []proc.ContainerRuntime{proc.RuntimeDocker},
 				},
 			},
 			data: map[string]string{
@@ -103,14 +97,12 @@ func TestMatch(t *testing.T) {
 		"runtime rules with search true": {
 			rules: []types.Rule{
 				{
-					SearchEvents: map[string]types.Search{
-						"key": types.Search{
+					FilterEvents: map[string]types.Filter{
+						"key": types.Filter{
 							Values: []string{"thing", "blah", "value"},
 						},
 					},
-					FilterEvents: types.Filter{
-						ContainerRuntimes: []proc.ContainerRuntime{proc.RuntimeDocker},
-					},
+					ContainerRuntimes: []proc.ContainerRuntime{proc.RuntimeDocker},
 				},
 			},
 			data: map[string]string{

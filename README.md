@@ -36,22 +36,74 @@ action.
 ### Programs
 
 The programs that exist today are based off a few
-[bcc-tools](https://github.com/iovisor/bcc) programs. Writing
-these requires knowledge of BPF but you can use the base provided here to
-create your own programs and add them in a fork, if you so wish for say an
-enterprise who doesn't want others to reverse engineer what they are tracing and
-how they alert.
+[bcc-tools](https://github.com/iovisor/bcc) programs. 
+
+You could always add your own programs in a fork if you worry people will
+reverse engineer the data you are collecting and alerting on.
+
+These must implement the `Program` interface:
+
+```go
+// Program defines the basic capabilities of a program.
+type Program interface {
+	// String returns a string representation of this program.
+	String() string
+	// Load creates the bpf module and starts collecting the data for the program.
+	Load() error
+	// Unload closes the bpf module and all the probes that all attached to it.
+	Unload()
+	// WatchEvent defines the function to watch the events for the program.
+	WatchEvent(rules []types.Rule) (*Event, error)
+	// Start starts the map for the program.
+	Start()
+}
+```
+
+As you can see from above you could _technically_ implement this interface with
+something other than BPF ;)
+
+The `Event` type defines the data returned from the program. As you can see
+below, the `Data` is of type `map[string]string` meaning any key value pair can
+be returned for the data. The rules then filter using those key value pairs.
+
+```go
+type Event struct {
+	PID              uint32
+	TGID             uint32
+	Data             map[string]string
+	ContainerRuntime proc.ContainerRuntime
+}
+```
 
 ### Rules
 
-These are toml files that hold some logic for what you would like to trace. You
-can search for anything returned by a `Program` in it's `map[string]string`
+These are toml files that hold some logic for what you would like to trace. 
+You can search for anything returned by a `Program` in it's `map[string]string`
 data struct.
 
 You can also filter based off the container runtime you would like to alert on.
+The container runtime must be one of the strings defined 
+[here](https://github.com/jessfraz/bpfd/blob/master/proc/proc.go#L24).
 
 If you provide no rules for a program, then _all_ the events will be passed to
 actions.
+
+The example below describes a rule file to filter the data returned from the
+`exec` program. Events from `exec` will only be returned if the `command` matches
+one of those values AND the container runtime is `docker` or `kube`.
+
+```toml
+program = "exec"
+
+[filterEvents]
+  [filterEvents.command]
+  values = ["sshd", "dbus-daemon-lau", "ping", "ping6", "critical-stack-", "pmmcli", "filemng", "PassengerAgent", "bwrap", "osdetect", "nginxmng", "sw-engine-fpm", "start-stop-daem"]
+
+containerRuntimes = ["docker","kube"]
+```
+
+If you are wondering where the `command` key comes from it's defined in the
+`exec` program [here](https://github.com/jessfraz/bpfd/blob/master/program/exec/exec.go#L204).
 
 ### Actions
 

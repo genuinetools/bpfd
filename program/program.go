@@ -85,17 +85,17 @@ func UnloadAll() {
 // the event.
 // TODO: combine so we are not iterating over the rules twice.
 func Match(rules []types.Rule, data map[string]string, pidRuntime proc.ContainerRuntime) bool {
-	hasSearch := false
-	hasFilter := false
-	correctFilter := false
-	foundSearch := false
+	hasFilters := false
+	hasRuntimeFilter := false
+	correctRuntime := false
+	passedFilters := false
 
 	for _, rule := range rules {
-		for _, runtime := range rule.FilterEvents.ContainerRuntimes {
-			hasFilter = true
+		for _, runtime := range rule.ContainerRuntimes {
+			hasRuntimeFilter = true
 			if pidRuntime == runtime {
-				correctFilter = true
-				if foundSearch {
+				correctRuntime = true
+				if passedFilters {
 					// return early
 					return true
 				}
@@ -103,12 +103,12 @@ func Match(rules []types.Rule, data map[string]string, pidRuntime proc.Container
 		}
 
 		for key, ogValue := range data {
-			s, _ := rule.SearchEvents[key]
+			s, _ := rule.FilterEvents[key]
 			for _, find := range s.Values {
-				hasSearch = true
+				hasFilters = true
 				if strings.Contains(ogValue, find) {
-					foundSearch = true
-					if correctFilter {
+					passedFilters = true
+					if correctRuntime {
 						// return early
 						return true
 					}
@@ -118,22 +118,22 @@ func Match(rules []types.Rule, data map[string]string, pidRuntime proc.Container
 
 	}
 
-	if !hasSearch && !hasFilter {
+	if !hasFilters && !hasRuntimeFilter {
 		// In the case that we do not have any for searches or filters then we can
 		// return true to return all events.
 		return true
 	}
 
-	if hasSearch && hasFilter && correctFilter && foundSearch {
+	if hasFilters && hasRuntimeFilter && correctRuntime && passedFilters {
 		// This is the case where everything matched.
 		return true
 	}
 
-	if hasFilter && !hasSearch && correctFilter {
+	if hasRuntimeFilter && !hasFilters && correctRuntime {
 		return true
 	}
 
-	if hasSearch && !hasFilter && foundSearch {
+	if hasFilters && !hasRuntimeFilter && passedFilters {
 		return true
 	}
 
