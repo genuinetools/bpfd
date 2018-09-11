@@ -46,8 +46,6 @@ These must implement the `Program` interface:
 ```go
 // Program defines the basic capabilities of a program.
 type Program interface {
-    // String returns a string representation of this program.
-    String() string
     // Load creates the bpf module and starts collecting the data for the program.
     Load() error
     // Unload closes the bpf module and all the probes that all attached to it.
@@ -56,6 +54,8 @@ type Program interface {
     WatchEvent() (*grpc.Event, error)
     // Start starts the map for the program.
     Start()
+    // String returns a string representation of this program.
+    String() string
 }
 ```
 
@@ -120,7 +120,10 @@ Actions implement the `Actions` interface:
 ```go
 // Action performs an action on an event.
 type Action interface {
+    // Do runs the action on an event.
     Do(event *grpc.Event) error
+    // String returns a string representation of this program.
+    String() string
 }
 ```
 

@@ -18,8 +18,6 @@ type InitFunc func() (Program, error)
 
 // Program defines the basic capabilities of a program.
 type Program interface {
-	// String returns a string representation of this program.
-	String() string
 	// Load creates the bpf module and starts collecting the data for the program.
 	Load() error
 	// Unload closes the bpf module and all the probes that all attached to it.
@@ -28,6 +26,8 @@ type Program interface {
 	WatchEvent() (*grpc.Event, error)
 	// Start starts the map for the program.
 	Start()
+	// String returns a string representation of this program.
+	String() string
 }
 
 // Init initialized the program map.
