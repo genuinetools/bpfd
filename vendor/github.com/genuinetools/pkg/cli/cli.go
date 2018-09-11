@@ -15,6 +15,8 @@ import (
 const (
 	// GitCommitKey is the key for the program's GitCommit data.
 	GitCommitKey ContextKey = "program.GitCommit"
+	// NameKey is the key for the program's name.
+	NameKey ContextKey = "program.Name"
 	// VersionKey is the key for the program's Version data.
 	VersionKey ContextKey = "program.Version"
 )
@@ -370,5 +372,6 @@ func contains(match []string, a ...string) bool {
 func (p *Program) defaultContext() context.Context {
 	// Create the context with the values we need to pass to the version command.
 	ctx := context.WithValue(context.Background(), GitCommitKey, p.GitCommit)
+	ctx = context.WithValue(ctx, NameKey, p.Name)
 	return context.WithValue(ctx, VersionKey, p.Version)
 }

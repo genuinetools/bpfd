@@ -11,11 +11,25 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6ef4d6cb61f89688f3256f2e8ed147ed75700f3231523ed6234091575160a5fb"
+  digest = "1:bd228d1a02fffcaf3abca973886870113d843ea7a67d5b6f70a5169950499ea9"
   name = "github.com/genuinetools/pkg"
   packages = ["cli"]
   pruneopts = "NUT"
-  revision = "4038376dadd53f913de41663feae408ef23c8e8a"
+  revision = "1c141f661797b5fb22033c9a7a5ab004994a0404"
+
+[[projects]]
+  digest = "1:63ccdfbd20f7ccd2399d0647a7d100b122f79c13bb83da9660b1598396fd9f62"
+  name = "github.com/golang/protobuf"
+  packages = [
+    "proto",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/timestamp",
+  ]
+  pruneopts = "NUT"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -58,7 +72,23 @@
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = "NUT"
-  revision = "0709b304e793a5edb4a2c0145f281ecdc20838a4"
+  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
+
+[[projects]]
+  branch = "master"
+  digest = "1:a2707daa031e6db5fcaae8a9b30eaa503a0d7d8aa72cd50b27fa394ef6c3f7fe"
+  name = "golang.org/x/net"
+  packages = [
+    "context",
+    "http/httpguts",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "trace",
+  ]
+  pruneopts = "NUT"
+  revision = "161cd47e91fd58ac17490ef4d742dc98bb4cf60e"
 
 [[projects]]
   branch = "master"
@@ -71,17 +101,86 @@
   pruneopts = "NUT"
   revision = "d0be0721c37eeb5299f245a996a483160fc36940"
 
+[[projects]]
+  digest = "1:e7071ed636b5422cc51c0e3a6cebc229d6c9fffc528814b519a980641422d619"
+  name = "golang.org/x/text"
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable",
+  ]
+  pruneopts = "NUT"
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:077c1c599507b3b3e9156d17d36e1e61928ee9b53a5b420f10f28ebd4a0b275c"
+  name = "google.golang.org/genproto"
+  packages = ["googleapis/rpc/status"]
+  pruneopts = "NUT"
+  revision = "11092d34479b07829b72e10713b159248caf5dad"
+
+[[projects]]
+  digest = "1:c2d756dba3cf0bc2d50ff9b3e4b80cd327436cf678386a51c8417d084625a51d"
+  name = "google.golang.org/grpc"
+  packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "codes",
+    "connectivity",
+    "credentials",
+    "encoding",
+    "encoding/proto",
+    "grpclog",
+    "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/transport",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "stats",
+    "status",
+    "tap",
+  ]
+  pruneopts = "NUT"
+  revision = "32fb0ac620c32ba40a4626ddf94d90d12cce3455"
+  version = "v1.14.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/BurntSushi/toml",
     "github.com/genuinetools/pkg/cli",
+    "github.com/golang/protobuf/proto",
     "github.com/iovisor/gobpf/bcc",
     "github.com/jessfraz/ship/version",
     "github.com/sirupsen/logrus",
     "github.com/syndtr/gocapability/capability",
+    "golang.org/x/net/context",
     "golang.org/x/sys/unix",
+    "google.golang.org/grpc",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

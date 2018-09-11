@@ -25,7 +25,7 @@ func TestMatch(t *testing.T) {
 			rules: []types.Rule{
 				{
 					FilterEvents: map[string]types.Filter{
-						"key": types.Filter{
+						"key": {
 							Values: []string{"thing", "blah"},
 						},
 					},
@@ -41,7 +41,7 @@ func TestMatch(t *testing.T) {
 			rules: []types.Rule{
 				{
 					FilterEvents: map[string]types.Filter{
-						"key": types.Filter{
+						"key": {
 							Values: []string{"thing", "blah", "value"},
 						},
 					},
@@ -81,7 +81,7 @@ func TestMatch(t *testing.T) {
 			rules: []types.Rule{
 				{
 					FilterEvents: map[string]types.Filter{
-						"key": types.Filter{
+						"key": {
 							Values: []string{"thing", "blah", "value"},
 						},
 					},
@@ -98,7 +98,7 @@ func TestMatch(t *testing.T) {
 			rules: []types.Rule{
 				{
 					FilterEvents: map[string]types.Filter{
-						"key": types.Filter{
+						"key": {
 							Values: []string{"thing", "blah", "value"},
 						},
 					},
