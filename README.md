@@ -85,7 +85,7 @@ type Event struct {
 ### Rules
 
 These are toml files that hold some logic for what you would like to trace. 
-You can search for anything returned by a `Program` in it's `map[string]string`
+You can search for anything returned by a `Program` in its `map[string]string`
 data struct.
 
 You can also filter based off the container runtime you would like to alert on.
@@ -109,7 +109,7 @@ program = "exec"
 containerRuntimes = ["docker","kube"]
 ```
 
-If you are wondering where the `command` key comes from it's defined in the
+If you are wondering where the `command` key comes from, it's defined in the
 `exec` program [here](https://github.com/jessfraz/bpfd/blob/master/program/exec/exec.go#L200).
 
 ### Actions
