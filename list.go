@@ -8,7 +8,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/jessfraz/bpfd/api/grpc"
-	"github.com/sirupsen/logrus"
 )
 
 const listHelp = `List rules.`
@@ -35,7 +34,7 @@ func (cmd *listCommand) Run(ctx context.Context, args []string) error {
 	// List the rules.
 	resp, err := c.ListRules(context.Background(), &grpc.ListRulesRequest{})
 	if err != nil {
-		logrus.Fatalf("sending ListRules request failed: %v", err)
+		return fmt.Errorf("sending ListRules request failed: %v", err)
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 20, 1, 3, ' ', 0)

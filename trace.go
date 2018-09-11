@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,12 +29,15 @@ type traceCommand struct {
 }
 
 func (cmd *traceCommand) Run(ctx context.Context, args []string) error {
+	tracing := true
+
 	// On ^C, or SIGTERM handle exit.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, syscall.SIGTERM)
 	go func() {
 		for sig := range c {
+			tracing = false
 			logrus.Infof("Received %s, exiting", sig.String())
 			os.Exit(0)
 		}
@@ -45,11 +49,19 @@ func (cmd *traceCommand) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	// Get the events in a loop.
-	for {
-		event, err := client.LiveTrace(context.Background(), &grpc.LiveTraceRequest{})
+	// Get the events from the stream.
+	stream, err := client.LiveTrace(context.Background(), &grpc.LiveTraceRequest{})
+	if err != nil {
+		return fmt.Errorf("sending LiveTrace request failed: %v", err)
+	}
+
+	for tracing {
+		event, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
-			logrus.Fatalf("sending LiveTrace request failed: %v", err)
+			return fmt.Errorf("receiving event from stream failed: %v", err)
 		}
 
 		if event == nil || event.Data == nil || len(event.Data) < 1 {

@@ -7,7 +7,7 @@ service API {
   rpc CreateRule(CreateRuleRequest) returns (CreateRuleResponse) {}
   rpc RemoveRule(RemoveRuleRequest) returns (RemoveRuleResponse) {}
   rpc ListRules(ListRulesRequest) returns (ListRulesResponse) {}
-  rpc LiveTrace(LiveTraceRequest) returns (Event) {}
+  rpc LiveTrace(LiveTraceRequest) returns (stream Event) {}
 }
 
 message CreateRuleRequest {

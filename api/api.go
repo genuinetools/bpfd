@@ -25,6 +25,13 @@ type apiServer struct {
 
 	programList []string
 	actionList  []string
+
+	isStreaming bool
+
+	// events is a variable size buffer.
+	events []grpc.Event
+	// eventMutex locks the buffer for every transaction.
+	eventsMutex sync.Mutex
 }
 
 // Opts holds the options for a server.
@@ -85,8 +92,8 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 
 					event.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
 
-					// Add this event to our queue of events.
-					// addEvent(*event)
+					// Add this event to our queue of events if we are streaming.
+					server.addEvent(*event)
 
 					// Perform the actions.
 					for _, a := range rule.Actions {
@@ -97,9 +104,6 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 						}
 						action.Do(event)
 					}
-
-					// Remove the event from the queue.
-					// popEvent()
 				}
 
 			}
@@ -196,4 +200,22 @@ func (s *apiServer) ListRules(ctx context.Context, r *grpc.ListRulesRequest) (*g
 	}
 
 	return &grpc.ListRulesResponse{Rules: rs}, nil
+}
+
+func (s *apiServer) LiveTrace(l *grpc.LiveTraceRequest, stream grpc.API_LiveTraceServer) error {
+	s.isStreaming = true
+
+	for s.isStreaming {
+		event := s.popEvent()
+		if err := stream.Send(event); err != nil {
+			return err
+		}
+
+		if err := stream.Context().Err(); err != nil {
+			s.isStreaming = false
+			break
+		}
+	}
+
+	return nil
 }
