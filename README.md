@@ -69,8 +69,8 @@ be returned for the data. The rules then filter using those key value pairs.
 ```go
 // Event defines the data struct for holding event data.
 type Event struct {
-    PID              uint32
-    TGID             uint32
+    PID              uint32            // Process ID.
+    TGID             uint32            // Task group ID.
     Data             map[string]string
     ContainerRuntime string            // Filled in after the program is run so you don't need to.
     ContainerID      string            // Filled in after the program is run so you don't need to.
