@@ -67,22 +67,34 @@ func Parse(file string) (grpc.Rule, error) {
 
 // Match checks the filter properties for a rule against the data from
 // the event. It returns a boolean and the actions for the rule.
-// TODO: make better
 func Match(rule grpc.Rule, data map[string]string, pidRuntime string) (bool, []string) {
-	hasFilters := false
-	hasRuntimeFilter := false
-	correctRuntime := false
-	passedFilters := false
+	// Return early if we have nothing to filter on.
+	if len(rule.ContainerRuntimes) < 1 && len(rule.FilterEvents) < 1 {
+		return true, rule.Actions
+	}
 
+	matchedRuntime := false
 	for _, runtime := range rule.ContainerRuntimes {
-		hasRuntimeFilter = true
 		if pidRuntime == runtime {
-			correctRuntime = true
-			if passedFilters {
-				// return early
+			// Return early if we know we have nothing else to filter on.
+			if len(rule.FilterEvents) < 1 {
 				return true, rule.Actions
 			}
+
+			// Continue to the next check.
+			matchedRuntime = true
+			break
 		}
+	}
+
+	// Return early here if we never matched a runtime.
+	if len(rule.ContainerRuntimes) > 0 && !matchedRuntime {
+		return false, rule.Actions
+	}
+
+	// Return early here if we have nothing else to filter on.
+	if len(rule.FilterEvents) < 1 {
+		return true, rule.Actions
 	}
 
 	for key, ogValue := range data {
@@ -91,35 +103,13 @@ func Match(rule grpc.Rule, data map[string]string, pidRuntime string) (bool, []s
 			continue
 		}
 		for _, find := range s.Values {
-			hasFilters = true
 			if strings.Contains(ogValue, find) {
-				passedFilters = true
-				if correctRuntime {
-					// return early
-					return true, rule.Actions
-				}
+				// Return early since we have nothing else to filter on.
+				return true, rule.Actions
 			}
 		}
 	}
 
-	if !hasFilters && !hasRuntimeFilter {
-		// In the case that we do not have any for searches or filters then we can
-		// return true to return all events.
-		return true, rule.Actions
-	}
-
-	if hasFilters && hasRuntimeFilter && correctRuntime && passedFilters {
-		// This is the case where everything matched.
-		return true, rule.Actions
-	}
-
-	if hasRuntimeFilter && !hasFilters && correctRuntime {
-		return true, rule.Actions
-	}
-
-	if hasFilters && !hasRuntimeFilter && passedFilters {
-		return true, rule.Actions
-	}
-
-	return false, nil
+	// We did not match any filters.
+	return false, rule.Actions
 }

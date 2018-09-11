@@ -49,7 +49,7 @@ func TestMatch(t *testing.T) {
 			runtime:  proc.RuntimeNotFound,
 			expected: true,
 		},
-		"runtime rules no search false": {
+		"runtime rules no filter false": {
 			rule: grpc.Rule{
 				ContainerRuntimes: []string{string(proc.RuntimeDocker)},
 			},
@@ -59,7 +59,7 @@ func TestMatch(t *testing.T) {
 			runtime:  proc.RuntimeNotFound,
 			expected: false,
 		},
-		"runtime rules no search true": {
+		"runtime rules no filter true": {
 			rule: grpc.Rule{
 				ContainerRuntimes: []string{string(proc.RuntimeDocker)},
 			},
@@ -69,7 +69,7 @@ func TestMatch(t *testing.T) {
 			runtime:  proc.RuntimeDocker,
 			expected: true,
 		},
-		"runtime rules with search false": {
+		"runtime rules with filter false": {
 			rule: grpc.Rule{
 				FilterEvents: map[string]*grpc.Filter{
 					"key": {
@@ -84,7 +84,7 @@ func TestMatch(t *testing.T) {
 			runtime:  proc.RuntimeNotFound,
 			expected: false,
 		},
-		"runtime rules with search true": {
+		"runtime rules with filter true": {
 			rule: grpc.Rule{
 				FilterEvents: map[string]*grpc.Filter{
 					"key": {
