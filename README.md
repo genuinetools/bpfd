@@ -45,6 +45,13 @@ The programs that exist today are based off a few
 You could always add your own programs in a fork if you worry people will
 reverse engineer the data you are collecting and alerting on.
 
+The current compiled in programs are:
+
+- [bashreadline](program/bashreadline): trace commands being entered into
+    the bash command line
+- [exec](program/exec): trace calls to exec binaries
+- [open](program/open): trace calls to open files
+
 These must implement the `Program` interface:
 
 ```go
@@ -120,6 +127,11 @@ Actions do "something" on an event. This way you can send filtered events to
 Slack, email, or even run arbitrary code. You could
 kill a container, pause a container, or checkpoint a container to restore it
 elsewhere without even having to login to a computer.
+
+The current compiled in actions are:
+
+- [stdout](action/stdout): print to stdout
+- [kill](action/kill): kill the process
 
 Actions implement the `Actions` interface:
 
