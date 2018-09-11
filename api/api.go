@@ -66,6 +66,7 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 				}
 
 				event.ContainerRuntime = string(proc.GetContainerRuntime(int(event.TGID), int(event.PID)))
+				event.Program = p
 
 				progRules, _ := server.rules[p]
 
@@ -83,7 +84,6 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 					}
 
 					event.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
-					event.Program = p
 
 					// Add this event to our queue of events.
 					// addEvent(*event)
