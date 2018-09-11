@@ -203,16 +203,22 @@ func (s *apiServer) ListRules(ctx context.Context, r *grpc.ListRulesRequest) (*g
 }
 
 func (s *apiServer) LiveTrace(l *grpc.LiveTraceRequest, stream grpc.API_LiveTraceServer) error {
+	logrus.Debug("live trace streaming client CONNECTED")
 	s.isStreaming = true
 
 	for s.isStreaming {
 		event := s.popEvent()
+		if event == nil {
+			continue
+		}
+
 		if err := stream.Send(event); err != nil {
 			return err
 		}
 
 		if err := stream.Context().Err(); err != nil {
 			s.isStreaming = false
+			logrus.Debug("live trace streaming client DISCONNECTED")
 			break
 		}
 	}

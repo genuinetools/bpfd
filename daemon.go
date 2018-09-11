@@ -141,7 +141,7 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	}
 	types.RegisterAPIServer(s, svr)
 
-	logrus.Infof("gRPC api server listening on %s", grpcAddress)
+	logrus.Infof("gRPC api server listening on: %s", grpcAddress)
 
 	return s.Serve(l)
 }
