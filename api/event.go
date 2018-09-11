@@ -46,6 +46,11 @@ func (s *apiServer) LiveTrace(ctx context.Context, l *grpc.LiveTraceRequest) (*g
 	// Pop a event off the queue (or nil).
 	event := popEvent()
 
+	// Handle nil case so we don't get error: "proto: Marshal called with nil".
+	if event == nil {
+		event = &grpc.Event{}
+	}
+
 	// Return it.
 	return event, nil
 }

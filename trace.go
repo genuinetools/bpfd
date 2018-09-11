@@ -51,7 +51,7 @@ func (cmd *traceCommand) Run(ctx context.Context, args []string) error {
 			logrus.Fatalf("sending LiveTrace request failed: %v", err)
 		}
 
-		if event == nil {
+		if event == nil || event.Data == nil || len(event.Data) < 1 {
 			// continue the loop
 			continue
 		}

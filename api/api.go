@@ -62,6 +62,7 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 				}
 
 				event.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
+				event.Program = p
 
 				// Add this event to our list of events.
 				addEvent(*event)
