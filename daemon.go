@@ -88,7 +88,7 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 		}
 		programs[p] = prog
 	}
-	logrus.Debugf("programs: %#v\n", programs)
+	logrus.Debugf("programs: %#v", programs)
 
 	// List all the compiled in actions.
 	actionList := action.List()
@@ -101,7 +101,7 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 		}
 		actions[a] = acn
 	}
-	logrus.Debugf("actions: %#v\n", actions)
+	logrus.Debugf("actions: %#v", actions)
 
 	// Validate the rules against the programs and actions.
 	for _, prs := range rls {
