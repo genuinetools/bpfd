@@ -72,9 +72,9 @@ type Event struct {
     PID              uint32
     TGID             uint32
     Data             map[string]string
-    ContainerRuntime proc.ContainerRuntime // Filled in after the program is run so you don't need to.
-    ContainerID      string                // Filled in after the program is run so you don't need to.
-    Program          string                // Filled in after the program is run so you don't need to.
+    ContainerRuntime string            // Filled in after the program is run so you don't need to.
+    ContainerID      string            // Filled in after the program is run so you don't need to.
+    Program          string            // Filled in after the program is run so you don't need to.
 }
 ```
 
@@ -110,7 +110,7 @@ If you are wondering where the `command` key comes from it's defined in the
 
 ### Actions
 
-COMING SOON
+**COMING SOON**
 
 There will also be an interface for actions. That way you can send alerts 
 on the rules you set up to Slack, email, or even run arbitrary code so you can
