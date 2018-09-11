@@ -17,8 +17,8 @@ func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (
 	return &grpc.CreateRuleResponse{}, nil
 }
 
-func (s *apiServer) DeleteRule(ctx context.Context, r *grpc.DeleteRuleRequest) (*grpc.DeleteRuleResponse, error) {
-	return &grpc.DeleteRuleResponse{}, nil
+func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (*grpc.RemoveRuleResponse, error) {
+	return &grpc.RemoveRuleResponse{}, nil
 }
 
 func (s *apiServer) ListRules(ctx context.Context, r *grpc.ListRulesRequest) (*grpc.ListRulesResponse, error) {

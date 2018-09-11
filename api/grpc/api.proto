@@ -5,7 +5,7 @@ package types;
 
 service API {
   rpc CreateRule(CreateRuleRequest) returns (CreateRuleResponse) {}
-  rpc DeleteRule(DeleteRuleRequest) returns (DeleteRuleResponse) {}
+  rpc RemoveRule(RemoveRuleRequest) returns (RemoveRuleResponse) {}
   rpc ListRules(ListRulesRequest) returns (ListRulesResponse) {}
 }
 
@@ -16,11 +16,11 @@ message CreateRuleRequest {
 message CreateRuleResponse {
 }
 
-message DeleteRuleRequest {
+message RemoveRuleRequest {
   string name = 1; // Name of rule
 }
 
-message DeleteRuleResponse {
+message RemoveRuleResponse {
 }
 
 message ListRulesRequest {

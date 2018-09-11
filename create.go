@@ -9,6 +9,7 @@ import (
 
 	"github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/rules"
+	"github.com/sirupsen/logrus"
 )
 
 const createHelp = `Create one or more rules.`
@@ -40,6 +41,7 @@ func (cmd *createCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
+	logrus.Debugf("Creating rules: %s", strings.Join(names, ", "))
 
 	// Create the rules.
 	for _, rules := range prs {
@@ -50,9 +52,10 @@ func (cmd *createCommand) Run(ctx context.Context, args []string) error {
 			if err != nil {
 				return fmt.Errorf("sending CreateRule request for name %s failed: %v", rule.Name, err)
 			}
+
+			fmt.Println(rule.Name)
 		}
 	}
 
-	fmt.Printf("Created rule(s): %s\n", strings.Join(names, ", "))
 	return nil
 }
