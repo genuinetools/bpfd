@@ -11,10 +11,10 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/rules"
-	"github.com/jessfraz/bpfd/types"
 	"github.com/sirupsen/logrus"
 
 	// Register the builtin programs.
@@ -87,10 +87,10 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 
 		progRules, _ := rules[p]
 
-		go func(p string, prog program.Program, progRules []types.Rule) {
+		go func(p string, prog program.Program, progRules []grpc.Rule) {
 			for {
 				// Watch the events for the program.
-				event, err := prog.WatchEvent(progRules)
+				event, err := prog.WatchEvent()
 				if err != nil {
 					logrus.Warnf("watch event for program %s failed: %v", p, err)
 				}

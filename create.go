@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
+	"strings"
+
+	"github.com/jessfraz/bpfd/api/grpc"
+	"github.com/jessfraz/bpfd/rules"
 )
 
 const createHelp = `Create one or more rules.`
@@ -25,5 +30,29 @@ func (cmd *createCommand) Run(ctx context.Context, args []string) error {
 		return errors.New("must pass at least one rule file")
 	}
 
+	// Create the grpc client.
+	c, err := getClient(ctx, grpcAddress)
+	if err != nil {
+		return err
+	}
+
+	prs, names, err := rules.Parse(args...)
+	if err != nil {
+		return err
+	}
+
+	// Create the rules.
+	for _, rules := range prs {
+		for _, rule := range rules {
+			_, err := c.CreateRule(ctx, &grpc.CreateRuleRequest{
+				Rule: &rule,
+			})
+			if err != nil {
+				return fmt.Errorf("sending CreateRule request for name %s failed: %v", rule.Name, err)
+			}
+		}
+	}
+
+	fmt.Printf("Created rule(s): %s\n", strings.Join(names, ", "))
 	return nil
 }

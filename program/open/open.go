@@ -8,7 +8,6 @@ import (
 
 	bpf "github.com/iovisor/gobpf/bcc"
 	"github.com/jessfraz/bpfd/program"
-	"github.com/jessfraz/bpfd/types"
 )
 
 const (
@@ -142,7 +141,7 @@ func (p *bpfprogram) Load() error {
 	return nil
 }
 
-func (p *bpfprogram) WatchEvent(rules []types.Rule) (*program.Event, error) {
+func (p *bpfprogram) WatchEvent() (*program.Event, error) {
 	var event openEvent
 	data := <-p.channel
 	if err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event); err != nil {

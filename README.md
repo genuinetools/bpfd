@@ -53,7 +53,7 @@ type Program interface {
 	// Unload closes the bpf module and all the probes that all attached to it.
 	Unload()
 	// WatchEvent defines the function to watch the events for the program.
-	WatchEvent(rules []types.Rule) (*Event, error)
+	WatchEvent() (*Event, error)
 	// Start starts the map for the program.
 	Start()
 }

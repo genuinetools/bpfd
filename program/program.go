@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/proc"
-	"github.com/jessfraz/bpfd/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,7 +26,7 @@ type Program interface {
 	// Unload closes the bpf module and all the probes that all attached to it.
 	Unload()
 	// WatchEvent defines the function to watch the events for the program.
-	WatchEvent(rules []types.Rule) (*Event, error)
+	WatchEvent() (*Event, error)
 	// Start starts the map for the program.
 	Start()
 }
@@ -85,7 +85,7 @@ func UnloadAll() {
 // Match checks the rules search and filter properties against the data from
 // the event.
 // TODO: combine so we are not iterating over the rules twice.
-func Match(rules []types.Rule, data map[string]string, pidRuntime proc.ContainerRuntime) bool {
+func Match(rules []grpc.Rule, data map[string]string, pidRuntime proc.ContainerRuntime) bool {
 	hasFilters := false
 	hasRuntimeFilter := false
 	correctRuntime := false
@@ -94,7 +94,7 @@ func Match(rules []types.Rule, data map[string]string, pidRuntime proc.Container
 	for _, rule := range rules {
 		for _, runtime := range rule.ContainerRuntimes {
 			hasRuntimeFilter = true
-			if pidRuntime == runtime {
+			if string(pidRuntime) == runtime {
 				correctRuntime = true
 				if passedFilters {
 					// return early
@@ -104,7 +104,10 @@ func Match(rules []types.Rule, data map[string]string, pidRuntime proc.Container
 		}
 
 		for key, ogValue := range data {
-			s, _ := rule.FilterEvents[key]
+			s, ok := rule.FilterEvents[key]
+			if !ok {
+				continue
+			}
 			for _, find := range s.Values {
 				hasFilters = true
 				if strings.Contains(ogValue, find) {

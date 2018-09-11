@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/jessfraz/bpfd/types"
+	"github.com/jessfraz/bpfd/api/grpc"
 )
 
 // Parse parses the rules files and returns an array of rules for each program.
-func Parse(files ...string) (map[string][]types.Rule, []string, error) {
-	rules := map[string][]types.Rule{}
+func Parse(files ...string) (map[string][]grpc.Rule, []string, error) {
+	rules := map[string][]grpc.Rule{}
 	names := []string{}
 
 	for _, file := range files {
@@ -21,7 +21,7 @@ func Parse(files ...string) (map[string][]types.Rule, []string, error) {
 			return nil, nil, fmt.Errorf("reading file %s failed: %v", file, err)
 		}
 
-		var rule types.Rule
+		var rule grpc.Rule
 		if _, err := toml.Decode(string(b), &rule); err != nil {
 			return nil, nil, fmt.Errorf("decoding file %s as rule failed: %v", file, err)
 		}
