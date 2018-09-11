@@ -5,17 +5,19 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
 
-	"github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/proc"
+	"github.com/jessfraz/bpfd/api"
+	types "github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/rules"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 
 	// Register the builtin programs.
 	_ "github.com/jessfraz/bpfd/program/bashreadline"
@@ -53,8 +55,6 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 		}
 	}()
 
-	daemon := make(chan bool)
-
 	// Get all the rules from the rule directory.
 	fi, err := ioutil.ReadDir(cmd.rulesDirectory)
 	if err != nil {
@@ -72,56 +72,19 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	}
 	logrus.Infof("Loaded rules: %s", strings.Join(names, ", "))
 
-	// List all the compiled in programs.
-	programs := program.List()
-	logrus.Infof("Daemon compiled with programs: %s", strings.Join(programs, ", "))
-
-	// Load all the compiled in programs.
-	for _, p := range programs {
-		// We can ignore the error below since we are using the list from our code
-		// so the program has to exist in the map.
-		prog, _ := program.Get(p)
-		if err := prog.Load(); err != nil {
-			return fmt.Errorf("loading program %s failed: %v", p, err)
-		}
-
-		progRules, _ := rules[p]
-
-		go func(p string, prog program.Program, progRules []grpc.Rule) {
-			for {
-				// Watch the events for the program.
-				event, err := prog.WatchEvent()
-				if err != nil {
-					logrus.Warnf("watch event for program %s failed: %v", p, err)
-				}
-
-				if event == nil {
-					continue
-				}
-
-				runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
-
-				// Verify the event matches for the rules.
-				if !program.Match(progRules, event.Data, runtime) {
-					// We didn't find what we were searching for so continue.
-					continue
-				}
-
-				logrus.WithFields(logrus.Fields{
-					"program":           p,
-					"pid":               fmt.Sprintf("%d", event.PID),
-					"tgid":              fmt.Sprintf("%d", event.TGID),
-					"container_runtime": string(runtime),
-					"container_id":      proc.GetContainerID(int(event.TGID), int(event.PID)),
-				}).Infof("%#v", event.Data)
-			}
-		}(p, prog, progRules)
-
-		// Start the program.
-		prog.Start()
-		logrus.Infof("Watching events for plugin %s", p)
+	// Start the grpc api server.
+	l, err := net.Listen("unix", grpcAddress)
+	if err != nil {
+		return fmt.Errorf("starting listener at %s failed: %v", grpcAddress, err)
 	}
+	s := grpc.NewServer()
+	svr, err := api.NewServer(rules)
+	if err != nil {
+		return fmt.Errorf("creating new api server failed: %v", err)
+	}
+	types.RegisterAPIServer(s, svr)
 
-	<-daemon // Block forever
-	return nil
+	logrus.Infof("gRPC api server listening on %s", grpcAddress)
+
+	return s.Serve(l)
 }
