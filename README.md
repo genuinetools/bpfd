@@ -106,7 +106,7 @@ containerRuntimes = ["docker","kube"]
 ```
 
 If you are wondering where the `command` key comes from it's defined in the
-`exec` program [here](https://github.com/jessfraz/bpfd/blob/master/program/exec/exec.go#L204).
+`exec` program [here](https://github.com/jessfraz/bpfd/blob/master/program/exec/exec.go#L200).
 
 ### Actions
 
