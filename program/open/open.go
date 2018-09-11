@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
+	"github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/program"
 )
 
@@ -141,7 +142,7 @@ func (p *bpfprogram) Load() error {
 	return nil
 }
 
-func (p *bpfprogram) WatchEvent() (*program.Event, error) {
+func (p *bpfprogram) WatchEvent() (*grpc.Event, error) {
 	var event openEvent
 	data := <-p.channel
 	if err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event); err != nil {
@@ -167,7 +168,7 @@ func (p *bpfprogram) WatchEvent() (*program.Event, error) {
 		return nil, nil
 	}
 
-	e := &program.Event{
+	e := &grpc.Event{
 		PID:  event.PID,
 		TGID: event.TGID,
 		Data: map[string]string{

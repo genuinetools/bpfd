@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
+	"github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/program"
 )
 
@@ -95,7 +96,7 @@ func (p *bpfprogram) Load() error {
 	return nil
 }
 
-func (p *bpfprogram) WatchEvent() (*program.Event, error) {
+func (p *bpfprogram) WatchEvent() (*grpc.Event, error) {
 	var event readlineEvent
 	data := <-p.channel
 	err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event)
@@ -106,7 +107,7 @@ func (p *bpfprogram) WatchEvent() (*program.Event, error) {
 	// Convert C string (null-terminated) to Go string
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
-	e := &program.Event{
+	e := &grpc.Event{
 		PID:  event.PID,
 		TGID: event.TGID,
 		Data: map[string]string{

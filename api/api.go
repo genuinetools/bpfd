@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/proc"
@@ -13,8 +14,10 @@ import (
 )
 
 var (
-	// TODO: maybe don't store these in memory
+	// TODO: don't store these in memory
 	rules map[string]map[string]grpc.Rule
+	// rulesMutex locks the buffer for every transaction.
+	rulesMutex = sync.Mutex{}
 )
 
 type apiServer struct{}
@@ -48,23 +51,20 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 					continue
 				}
 
-				runtime := proc.GetContainerRuntime(int(event.TGID), int(event.PID))
+				event.ContainerRuntime = string(proc.GetContainerRuntime(int(event.TGID), int(event.PID)))
 
 				progRules, _ := rules[p]
 
 				// Verify the event matches for the rules.
-				if !program.Match(progRules, event.Data, runtime) {
+				if !program.Match(progRules, event.Data, event.ContainerRuntime) {
 					// We didn't find what we were searching for so continue.
 					continue
 				}
 
-				logrus.WithFields(logrus.Fields{
-					"program":           p,
-					"pid":               fmt.Sprintf("%d", event.PID),
-					"tgid":              fmt.Sprintf("%d", event.TGID),
-					"container_runtime": string(runtime),
-					"container_id":      proc.GetContainerID(int(event.TGID), int(event.PID)),
-				}).Infof("%#v", event.Data)
+				event.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
+
+				// Add this event to our list of events.
+				addEvent(*event)
 			}
 		}(p, prog)
 
@@ -77,6 +77,9 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 }
 
 func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (*grpc.CreateRuleResponse, error) {
+	rulesMutex.Lock()
+	defer rulesMutex.Unlock()
+
 	if c == nil || c.Rule == nil {
 		return nil, errors.New("rule cannot be nil")
 	}
@@ -88,6 +91,11 @@ func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (
 	if len(c.Rule.Program) < 1 {
 		return nil, errors.New("rule program cannot be empty")
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"program": c.Rule.Program,
+		"name":    c.Rule.Name,
+	}).Infof("Created rule")
 
 	// Check if we already have rules for the program to avoid a panic.
 	_, ok := rules[c.Rule.Program]
@@ -104,6 +112,9 @@ func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (
 
 // TODO: find a better way to remove without program
 func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (*grpc.RemoveRuleResponse, error) {
+	rulesMutex.Lock()
+	defer rulesMutex.Unlock()
+
 	if r == nil || len(r.Name) < 1 {
 		return nil, errors.New("rule name cannot be empty")
 	}
@@ -111,6 +122,12 @@ func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (
 	// If they passed the program then only remove the rule for that program.
 	if len(r.Program) > 0 {
 		delete(rules[r.Program], r.Name)
+
+		logrus.WithFields(logrus.Fields{
+			"program": r.Program,
+			"name":    r.Name,
+		}).Infof("Deleted rule")
+
 		return &grpc.RemoveRuleResponse{}, nil
 	}
 
@@ -119,6 +136,12 @@ func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (
 		for name := range prs {
 			if name == r.Name {
 				delete(rules[p], r.Name)
+
+				logrus.WithFields(logrus.Fields{
+					"program": p,
+					"name":    r.Name,
+				}).Infof("Deleted rule")
+
 				continue
 			}
 		}

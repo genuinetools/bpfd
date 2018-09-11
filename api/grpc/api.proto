@@ -1,12 +1,13 @@
 syntax = "proto3";
 option go_package = "grpc";
 
-package types;
+package grpc;
 
 service API {
   rpc CreateRule(CreateRuleRequest) returns (CreateRuleResponse) {}
   rpc RemoveRule(RemoveRuleRequest) returns (RemoveRuleResponse) {}
   rpc ListRules(ListRulesRequest) returns (ListRulesResponse) {}
+  rpc LiveTrace(LiveTraceRequest) returns (Event) {}
 }
 
 message CreateRuleRequest {
@@ -40,4 +41,16 @@ message Filter {
 
 message ListRulesResponse {
   repeated Rule rules = 1; // List of rules
+}
+
+message Event {
+  uint32 PID = 1;
+  uint32 TGID = 2;
+  map<string, string> data = 3;
+  string containerID = 4;
+  string containerRuntime = 5;
+  string program = 6; // Name of program
+}
+
+message LiveTraceRequest {
 }

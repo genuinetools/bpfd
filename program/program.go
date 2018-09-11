@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/proc"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,18 +25,9 @@ type Program interface {
 	// Unload closes the bpf module and all the probes that all attached to it.
 	Unload()
 	// WatchEvent defines the function to watch the events for the program.
-	WatchEvent() (*Event, error)
+	WatchEvent() (*grpc.Event, error)
 	// Start starts the map for the program.
 	Start()
-}
-
-// Event defines the data struct for holding event data.
-type Event struct {
-	PID              uint32
-	TGID             uint32
-	Data             map[string]string
-	ContainerRuntime proc.ContainerRuntime // Filled in after the program is run so you don't need to.
-	ContainerID      string                // Filled in after the program is run so you don't need to.
 }
 
 // Init initialized the program map.
@@ -85,7 +75,7 @@ func UnloadAll() {
 // Match checks the rules search and filter properties against the data from
 // the event.
 // TODO: combine so we are not iterating over the rules twice.
-func Match(rules map[string]grpc.Rule, data map[string]string, pidRuntime proc.ContainerRuntime) bool {
+func Match(rules map[string]grpc.Rule, data map[string]string, pidRuntime string) bool {
 	hasFilters := false
 	hasRuntimeFilter := false
 	correctRuntime := false
@@ -94,7 +84,7 @@ func Match(rules map[string]grpc.Rule, data map[string]string, pidRuntime proc.C
 	for _, rule := range rules {
 		for _, runtime := range rule.ContainerRuntimes {
 			hasRuntimeFilter = true
-			if string(pidRuntime) == runtime {
+			if pidRuntime == runtime {
 				correctRuntime = true
 				if passedFilters {
 					// return early

@@ -31,6 +31,7 @@ func main() {
 		&daemonCommand{},
 		&listCommand{},
 		&removeCommand{},
+		&traceCommand{},
 	}
 
 	// Setup the global flags.
