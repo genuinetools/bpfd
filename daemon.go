@@ -12,6 +12,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/jessfraz/bpfd/action"
 	"github.com/jessfraz/bpfd/api"
 	types "github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/program"
@@ -70,11 +71,44 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	for _, file := range fi {
 		files = append(files, filepath.Join(cmd.rulesDirectory, file.Name()))
 	}
-	rules, names, err := rules.ParseFiles(files...)
+	rls, names, err := rules.ParseFiles(files...)
 	if err != nil {
 		return fmt.Errorf("reading rules files from directory %s failed: %v", cmd.rulesDirectory, err)
 	}
 	logrus.Infof("Loaded rules: %s", strings.Join(names, ", "))
+
+	// List all the compiled in programs.
+	programList := program.List()
+	logrus.Infof("Daemon compiled with programs: %s", strings.Join(programList, ", "))
+	programs := map[string]program.Program{}
+	for _, p := range programList {
+		prog, err := program.Get(p)
+		if err != nil {
+			return err
+		}
+		programs[p] = prog
+	}
+
+	// List all the compiled in actions.
+	actionList := action.List()
+	logrus.Infof("Daemon compiled with actions: %s", strings.Join(actionList, ", "))
+	actions := map[string]action.Action{}
+	for _, a := range actionList {
+		acn, err := action.Get(a)
+		if err != nil {
+			return err
+		}
+		actions[a] = acn
+	}
+
+	// Validate the rules against the programs and actions.
+	for _, prs := range rls {
+		for _, r := range prs {
+			if err := rules.ValidateProgramsAndActions(r, programList, actionList); err != nil {
+				return err
+			}
+		}
+	}
 
 	// Create the directory if it doesn't exist.
 	if err := os.MkdirAll(filepath.Dir(grpcAddress), 0755); err != nil {
@@ -92,7 +126,14 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("starting listener at %s failed: %v", grpcAddress, err)
 	}
 	s := grpc.NewServer()
-	svr, err := api.NewServer(rules)
+	opt := api.Opts{
+		Rules:       rls,
+		Programs:    programs,
+		Actions:     actions,
+		ProgramList: programList,
+		ActionList:  actionList,
+	}
+	svr, err := api.NewServer(opt)
 	if err != nil {
 		return fmt.Errorf("creating new api server failed: %v", err)
 	}

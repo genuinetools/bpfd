@@ -78,7 +78,25 @@ func Validate(rule grpc.Rule) error {
 	// Check the container runtimes against the valid container runtimes.
 	for _, runtime := range rule.ContainerRuntimes {
 		if !proc.IsValidContainerRuntime(runtime) {
-			return fmt.Errorf("%s is not a valid container runtime", runtime)
+			return fmt.Errorf("[%s]: %s is not a valid container runtime", rule.Name, runtime)
+		}
+	}
+
+	return nil
+}
+
+// ValidateProgramsAndActions checks that the program and action parts of a rule
+// are valid against the given options.
+func ValidateProgramsAndActions(rule grpc.Rule, programs, actions []string) error {
+	// Check that the program is valid.
+	if !in(programs, rule.Program) {
+		return fmt.Errorf("[%s]: %s is not a valid program", rule.Name, rule.Program)
+	}
+
+	// Check that the actions are valid.
+	for _, a := range rule.Actions {
+		if !in(actions, a) {
+			return fmt.Errorf("[%s]: %s is not a valid action", rule.Name, a)
 		}
 	}
 
@@ -132,4 +150,13 @@ func Match(rule grpc.Rule, data map[string]string, pidRuntime string) (bool, []s
 
 	// We did not match any filters.
 	return false, rule.Actions
+}
+
+func in(a []string, s string) bool {
+	for _, b := range a {
+		if b == s {
+			return true
+		}
+	}
+	return false
 }

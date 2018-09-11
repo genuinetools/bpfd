@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/jessfraz/bpfd/action"
@@ -22,34 +21,30 @@ var (
 	rulesMutex = sync.Mutex{}
 )
 
-type apiServer struct{}
+type apiServer struct {
+	programs map[string]program.Program
+	actions  map[string]action.Action
+
+	programList []string
+	actionList  []string
+}
+
+// Opts holds the options for a server.
+type Opts struct {
+	Rules    map[string]map[string]grpc.Rule
+	Programs map[string]program.Program
+	Actions  map[string]action.Action
+
+	ProgramList []string
+	ActionList  []string
+}
 
 // NewServer returns grpc server instance.
-func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
-	rules = r
-
-	// List all the compiled in programs.
-	programs := program.List()
-	logrus.Infof("Daemon compiled with programs: %s", strings.Join(programs, ", "))
-
-	// List all the compiled in actions.
-	actionList := action.List()
-	logrus.Infof("Daemon compiled with actions: %s", strings.Join(actionList, ", "))
-	actions := map[string]action.Action{}
-	for _, a := range actionList {
-		acn, err := action.Get(a)
-		if err != nil {
-			return nil, err
-		}
-		actions[a] = acn
-	}
+func NewServer(opt Opts) (grpc.APIServer, error) {
+	rules = opt.Rules
 
 	// Load all the compiled in programs.
-	for _, p := range programs {
-		prog, err := program.Get(p)
-		if err != nil {
-			return nil, err
-		}
+	for p, prog := range opt.Programs {
 		if err := prog.Load(); err != nil {
 			return nil, fmt.Errorf("loading program %s failed: %v", p, err)
 		}
@@ -72,13 +67,13 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 
 				if len(progRules) < 1 {
 					// Just send to stdout and be done with it.
-					actions["stdout"].Do(event)
+					opt.Actions["stdout"].Do(event)
 					continue
 				}
 
 				for _, rule := range progRules {
 					// Verify the event matches for the rules.
-					match, ruleActions := rulespkg.Match(rule, event.Data, event.ContainerRuntime)
+					match, _ := rulespkg.Match(rule, event.Data, event.ContainerRuntime)
 					if !match {
 						// We didn't find what we were searching for so continue.
 						continue
@@ -91,8 +86,8 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 					// addEvent(*event)
 
 					// Perform the actions.
-					for _, a := range ruleActions {
-						action, ok := actions[a]
+					for _, a := range rule.Actions {
+						action, ok := opt.Actions[a]
 						if !ok {
 							logrus.Warnf("action %s provided by rule %s does not exist", a, rule.Name)
 							continue
@@ -112,7 +107,12 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 		logrus.Infof("Watching events for plugin %s", p)
 	}
 
-	return &apiServer{}, nil
+	return &apiServer{
+		programs:    opt.Programs,
+		actions:     opt.Actions,
+		programList: opt.ProgramList,
+		actionList:  opt.ActionList,
+	}, nil
 }
 
 func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (*grpc.CreateRuleResponse, error) {
@@ -123,12 +123,12 @@ func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (
 		return nil, errors.New("rule cannot be nil")
 	}
 
-	if len(c.Rule.Name) < 1 {
-		return nil, errors.New("rule name cannot be empty")
+	// Validate the rule.
+	if err := rulespkg.Validate(*c.Rule); err != nil {
+		return nil, err
 	}
-
-	if len(c.Rule.Program) < 1 {
-		return nil, errors.New("rule program cannot be empty")
+	if err := rulespkg.ValidateProgramsAndActions(*c.Rule, s.programList, s.actionList); err != nil {
+		return nil, err
 	}
 
 	logrus.WithFields(logrus.Fields{
