@@ -25,6 +25,7 @@ import (
 	_ "github.com/jessfraz/bpfd/program/open"
 
 	// Register the builtin actions.
+	_ "github.com/jessfraz/bpfd/action/kill"
 	_ "github.com/jessfraz/bpfd/action/stdout"
 )
 
