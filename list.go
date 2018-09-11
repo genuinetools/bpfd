@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"os"
+	"text/tabwriter"
+
+	"github.com/jessfraz/bpfd/api/grpc"
+	"github.com/sirupsen/logrus"
 )
 
 const listHelp = `List rules.`
@@ -20,5 +26,25 @@ type listCommand struct {
 }
 
 func (cmd *listCommand) Run(ctx context.Context, args []string) error {
+	// Create the grpc client.
+	c, err := getClient(ctx, grpcAddress)
+	if err != nil {
+		return err
+	}
+
+	// List the rules.
+	resp, err := c.ListRules(context.Background(), &grpc.ListRulesRequest{})
+	if err != nil {
+		logrus.Fatalf("sending ListRules request failed: %v", err)
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 20, 1, 3, ' ', 0)
+	fmt.Fprint(w, "NAME\tPROGRAM\n")
+
+	for _, rule := range resp.Rules {
+		fmt.Fprintf(w, "%s\t%s\n", rule.Name, rule.Program)
+	}
+
+	w.Flush()
 	return nil
 }
