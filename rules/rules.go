@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -10,9 +11,9 @@ import (
 	"github.com/jessfraz/bpfd/api/grpc"
 )
 
-// Parse parses the rules files and returns an array of rules for each program.
-func Parse(files ...string) (map[string][]grpc.Rule, []string, error) {
-	rules := map[string][]grpc.Rule{}
+// ParseFiles parses the rules files and returns an array of rules for each program.
+func ParseFiles(files ...string) (map[string]map[string]grpc.Rule, []string, error) {
+	rules := map[string]map[string]grpc.Rule{}
 	names := []string{}
 
 	for _, file := range files {
@@ -29,9 +30,26 @@ func Parse(files ...string) (map[string][]grpc.Rule, []string, error) {
 		if len(rule.Name) < 1 {
 			rule.Name = strings.TrimSuffix(filepath.Base(file), ".toml")
 		}
+
+		if len(rule.Name) < 1 {
+			return nil, nil, errors.New("rule name cannot be empty")
+		}
+
+		if len(rule.Program) < 1 {
+			return nil, nil, errors.New("rule program cannot be empty")
+		}
+
 		names = append(names, rule.Name)
 
-		rules[rule.Program] = append(rules[rule.Program], rule)
+		// Add the rule to our existing rules for the program.
+		// TODO: decide to error or not on overwrite
+		_, ok := rules[rule.Program]
+		if !ok {
+			rules[rule.Program] = map[string]grpc.Rule{rule.Name: rule}
+			continue
+		}
+
+		rules[rule.Program][rule.Name] = rule
 	}
 
 	return rules, names, nil

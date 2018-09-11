@@ -9,7 +9,7 @@ import (
 
 func TestMatch(t *testing.T) {
 	testcases := map[string]struct {
-		rules    []grpc.Rule
+		rules    map[string]grpc.Rule
 		data     map[string]string
 		runtime  proc.ContainerRuntime
 		expected bool
@@ -22,8 +22,8 @@ func TestMatch(t *testing.T) {
 			expected: true,
 		},
 		"no runtime rules false": {
-			rules: []grpc.Rule{
-				{
+			rules: map[string]grpc.Rule{
+				"rule": {
 					FilterEvents: map[string]*grpc.Filter{
 						"key": {
 							Values: []string{"thing", "blah"},
@@ -38,8 +38,8 @@ func TestMatch(t *testing.T) {
 			expected: false,
 		},
 		"no runtime rules true": {
-			rules: []grpc.Rule{
-				{
+			rules: map[string]grpc.Rule{
+				"rule": {
 					FilterEvents: map[string]*grpc.Filter{
 						"key": {
 							Values: []string{"thing", "blah", "value"},
@@ -54,8 +54,8 @@ func TestMatch(t *testing.T) {
 			expected: true,
 		},
 		"runtime rules no search false": {
-			rules: []grpc.Rule{
-				{
+			rules: map[string]grpc.Rule{
+				"rule": {
 					ContainerRuntimes: []string{string(proc.RuntimeDocker)},
 				},
 			},
@@ -66,8 +66,8 @@ func TestMatch(t *testing.T) {
 			expected: false,
 		},
 		"runtime rules no search true": {
-			rules: []grpc.Rule{
-				{
+			rules: map[string]grpc.Rule{
+				"rule": {
 					ContainerRuntimes: []string{string(proc.RuntimeDocker)},
 				},
 			},
@@ -78,8 +78,8 @@ func TestMatch(t *testing.T) {
 			expected: true,
 		},
 		"runtime rules with search false": {
-			rules: []grpc.Rule{
-				{
+			rules: map[string]grpc.Rule{
+				"rule": {
 					FilterEvents: map[string]*grpc.Filter{
 						"key": {
 							Values: []string{"thing", "blah", "value"},
@@ -95,8 +95,8 @@ func TestMatch(t *testing.T) {
 			expected: false,
 		},
 		"runtime rules with search true": {
-			rules: []grpc.Rule{
-				{
+			rules: map[string]grpc.Rule{
+				"rule": {
 					FilterEvents: map[string]*grpc.Filter{
 						"key": {
 							Values: []string{"thing", "blah", "value"},

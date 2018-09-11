@@ -37,7 +37,7 @@ func (cmd *createCommand) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	prs, names, err := rules.Parse(args...)
+	prs, names, err := rules.ParseFiles(args...)
 	if err != nil {
 		return err
 	}

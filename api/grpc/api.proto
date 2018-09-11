@@ -18,6 +18,7 @@ message CreateRuleResponse {
 
 message RemoveRuleRequest {
   string name = 1; // Name of rule
+  string program = 2; // Name of program
 }
 
 message RemoveRuleResponse {

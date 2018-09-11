@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -12,13 +13,14 @@ import (
 )
 
 var (
-	rules map[string][]grpc.Rule
+	// TODO: maybe don't store these in memory
+	rules map[string]map[string]grpc.Rule
 )
 
 type apiServer struct{}
 
 // NewServer returns grpc server instance.
-func NewServer(r map[string][]grpc.Rule) (grpc.APIServer, error) {
+func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 	rules = r
 
 	// List all the compiled in programs.
@@ -75,14 +77,63 @@ func NewServer(r map[string][]grpc.Rule) (grpc.APIServer, error) {
 }
 
 func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (*grpc.CreateRuleResponse, error) {
+	if c == nil || c.Rule == nil {
+		return nil, errors.New("rule cannot be nil")
+	}
+
+	if len(c.Rule.Name) < 1 {
+		return nil, errors.New("rule name cannot be empty")
+	}
+
+	if len(c.Rule.Program) < 1 {
+		return nil, errors.New("rule program cannot be empty")
+	}
+
+	// Check if we already have rules for the program to avoid a panic.
+	_, ok := rules[c.Rule.Program]
+	if !ok {
+		rules[c.Rule.Program] = map[string]grpc.Rule{c.Rule.Name: *c.Rule}
+		return &grpc.CreateRuleResponse{}, nil
+	}
+
+	// Add the rule to our existing rules for the program.
+	// TODO: decide to error or not on overwrite
+	rules[c.Rule.Program][c.Rule.Name] = *c.Rule
 	return &grpc.CreateRuleResponse{}, nil
 }
 
+// TODO: find a better way to remove without program
 func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (*grpc.RemoveRuleResponse, error) {
+	if r == nil || len(r.Name) < 1 {
+		return nil, errors.New("rule name cannot be empty")
+	}
+
+	// If they passed the program then only remove the rule for that program.
+	if len(r.Program) > 0 {
+		delete(rules[r.Program], r.Name)
+		return &grpc.RemoveRuleResponse{}, nil
+	}
+
+	// Iterate over the programs and find the rule.
+	for p, prs := range rules {
+		for name := range prs {
+			if name == r.Name {
+				delete(rules[p], r.Name)
+				continue
+			}
+		}
+	}
 	return &grpc.RemoveRuleResponse{}, nil
 }
 
 func (s *apiServer) ListRules(ctx context.Context, r *grpc.ListRulesRequest) (*grpc.ListRulesResponse, error) {
-	var rules []*grpc.Rule
-	return &grpc.ListRulesResponse{Rules: rules}, nil
+	var rs []*grpc.Rule
+
+	for _, prs := range rules {
+		for _, rule := range prs {
+			rs = append(rs, &rule)
+		}
+	}
+
+	return &grpc.ListRulesResponse{Rules: rs}, nil
 }

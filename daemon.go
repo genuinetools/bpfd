@@ -66,7 +66,7 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	for _, file := range fi {
 		files = append(files, filepath.Join(cmd.rulesDirectory, file.Name()))
 	}
-	rules, names, err := rules.Parse(files...)
+	rules, names, err := rules.ParseFiles(files...)
 	if err != nil {
 		return fmt.Errorf("reading rules files from directory %s failed: %v", cmd.rulesDirectory, err)
 	}

@@ -85,7 +85,7 @@ func UnloadAll() {
 // Match checks the rules search and filter properties against the data from
 // the event.
 // TODO: combine so we are not iterating over the rules twice.
-func Match(rules []grpc.Rule, data map[string]string, pidRuntime proc.ContainerRuntime) bool {
+func Match(rules map[string]grpc.Rule, data map[string]string, pidRuntime proc.ContainerRuntime) bool {
 	hasFilters := false
 	hasRuntimeFilter := false
 	correctRuntime := false
