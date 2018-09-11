@@ -33,14 +33,23 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 	logrus.Infof("Daemon compiled with programs: %s", strings.Join(programs, ", "))
 
 	// List all the compiled in actions.
-	actions := action.List()
-	logrus.Infof("Daemon compiled with actions: %s", strings.Join(actions, ", "))
+	actionList := action.List()
+	logrus.Infof("Daemon compiled with actions: %s", strings.Join(actionList, ", "))
+	actions := map[string]action.Action{}
+	for _, a := range actionList {
+		acn, err := action.Get(a)
+		if err != nil {
+			return nil, err
+		}
+		actions[a] = acn
+	}
 
 	// Load all the compiled in programs.
 	for _, p := range programs {
-		// We can ignore the error below since we are using the list from our code
-		// so the program has to exist in the map.
-		prog, _ := program.Get(p)
+		prog, err := program.Get(p)
+		if err != nil {
+			return nil, err
+		}
 		if err := prog.Load(); err != nil {
 			return nil, fmt.Errorf("loading program %s failed: %v", p, err)
 		}
@@ -63,18 +72,13 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 
 				if len(progRules) < 1 {
 					// Just send to stdout and be done with it.
-					action, err := action.Get("stdout")
-					if err != nil {
-						logrus.Warn(err)
-						continue
-					}
-					action.Do(event)
+					actions["stdout"].Do(event)
 					continue
 				}
 
 				for _, rule := range progRules {
 					// Verify the event matches for the rules.
-					match, actions := rulespkg.Match(rule, event.Data, event.ContainerRuntime)
+					match, ruleActions := rulespkg.Match(rule, event.Data, event.ContainerRuntime)
 					if !match {
 						// We didn't find what we were searching for so continue.
 						continue
@@ -87,10 +91,10 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 					// addEvent(*event)
 
 					// Perform the actions.
-					for _, a := range actions {
-						action, err := action.Get(a)
-						if err != nil {
-							logrus.Warn(err)
+					for _, a := range ruleActions {
+						action, ok := actions[a]
+						if !ok {
+							logrus.Warnf("action %s provided by rule %s does not exist", a, rule.Name)
 							continue
 						}
 						action.Do(event)
