@@ -6,8 +6,6 @@
 
 Framework for running BPF programs with rules on Linux as a daemon. Container aware.
 
-### NOTE: WIP If you want to contribute see "How it Works" below and consider adding more example rules or programs. Thanks!!
-
 **Table of Contents**
 
  * [How it Works](README.md#how-it-works)
@@ -122,10 +120,13 @@ If you are wondering where the `command` key comes from, it's defined in the
 `exec` program [here](https://github.com/jessfraz/bpfd/blob/master/program/exec/exec.go#L200).
 
 Rules can be dynamically controlled via bpfd's [gRPC](https://grpc.io/) interface.
+The cli tool can also be used for creating rules dynamically, see 
+[`create` usage](#create-rules-dynamically).
 
 The protobuf protocol definition is defined in [api/grpc/api.proto](https://github.com/jessfraz/bpfd/blob/master/api/grpc/api.proto)
 
-To enable gRPC control of bpfd you must use the [--gpc-addr](#usage) flag.
+To interact with the gRPC api you can use the [`--gpc-addr` flag](#usage)
+or the default is a sock at `/run/bpfd/bpfd.sock`.
 
 ### Actions
 
