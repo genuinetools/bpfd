@@ -102,6 +102,8 @@ one of those values AND the container runtime is `docker` or `kube`.
 ```toml
 program = "exec"
 
+actions = ["stdout"]
+
 [filterEvents]
   [filterEvents.command]
   values = ["sshd", "dbus-daemon-lau", "ping", "ping6", "critical-stack-", "pmmcli", "filemng", "PassengerAgent", "bwrap", "osdetect", "nginxmng", "sw-engine-fpm", "start-stop-daem"]

@@ -9,6 +9,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/jessfraz/bpfd/api/grpc"
+	"github.com/jessfraz/bpfd/proc"
 )
 
 // ParseFiles parses the rules files and returns an array of rules for each program.
@@ -54,15 +55,34 @@ func Parse(file string) (grpc.Rule, error) {
 		rule.Name = strings.TrimSuffix(filepath.Base(file), ".toml")
 	}
 
-	if len(rule.Name) < 1 {
-		return grpc.Rule{}, errors.New("rule name cannot be empty")
-	}
-
-	if len(rule.Program) < 1 {
-		return grpc.Rule{}, errors.New("rule program cannot be empty")
+	// Validate the rule.
+	if err := Validate(rule); err != nil {
+		return grpc.Rule{}, err
 	}
 
 	return rule, nil
+}
+
+// Validate checks that the rule is valid.
+func Validate(rule grpc.Rule) error {
+	// Check the rule name.
+	if len(rule.Name) < 1 {
+		return errors.New("rule name cannot be empty")
+	}
+
+	// Check the program name.
+	if len(rule.Program) < 1 {
+		return errors.New("rule program cannot be empty")
+	}
+
+	// Check the container runtimes against the valid container runtimes.
+	for _, runtime := range rule.ContainerRuntimes {
+		if !proc.IsValidContainerRuntime(runtime) {
+			return fmt.Errorf("%s is not a valid container runtime", runtime)
+		}
+	}
+
+	return nil
 }
 
 // Match checks the filter properties for a rule against the data from

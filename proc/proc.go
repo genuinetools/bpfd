@@ -58,7 +58,8 @@ const (
 )
 
 var (
-	runtimes = []ContainerRuntime{
+	// ContainerRuntimes contains all the container runtimes.
+	ContainerRuntimes = []ContainerRuntime{
 		RuntimeDocker,
 		RuntimeRkt,
 		RuntimeNspawn,
@@ -127,7 +128,7 @@ func getContainerRuntime(input string) ContainerRuntime {
 		return RuntimeNotFound
 	}
 
-	for _, runtime := range runtimes {
+	for _, runtime := range ContainerRuntimes {
 		if strings.Contains(input, string(runtime)) {
 			return runtime
 		}
@@ -439,4 +440,14 @@ func parseProcFile(data []byte) []string {
 	}
 
 	return strParts
+}
+
+// IsValidContainerRuntime checks if a string is a valid container runtime.
+func IsValidContainerRuntime(s string) bool {
+	for _, b := range ContainerRuntimes {
+		if string(b) == s {
+			return true
+		}
+	}
+	return false
 }
