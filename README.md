@@ -10,7 +10,7 @@ Framework for running BPF programs with rules on Linux as a daemon. Container aw
 
 **Table of Contents**
 
-* [How it Works](README.md#how-it-works)
+ * [How it Works](README.md#how-it-works)
    * [Programs](README.md#programs)
    * [Rules](README.md#rules)
    * [Actions](README.md#actions)
@@ -19,7 +19,11 @@ Framework for running BPF programs with rules on Linux as a daemon. Container aw
       * [Via Go](README.md#via-go)
       * [Via Docker](README.md#via-docker)
  * [Usage](README.md#usage)
-
+   * [Run the daemon](README.md#run-the-daemon)
+   * [Create rules dynamically](README.md#create-rules-dynamically)
+   * [Remove rules dynamically](README.md#remove-rules-dynamically)
+   * [List active rules](README.md#list-active-rules)
+   * [Live tracing events](README.md#live-tracing-events)
 
 ## How it Works
 
@@ -174,4 +178,89 @@ Commands:
   rm       Remove one or more rules.
   trace    Live trace the events returned after filtering.
   version  Show the version information.
+```
+
+### Run the daemon
+
+You can preload rules by passing `--rules-dir` to the command or placing
+rules in the default directory: `/etc/bpfd/rules`.
+
+```console
+$ bpfd daemon -h
+Usage: bpfd daemon [OPTIONS]
+
+Start the daemon.
+
+Flags:
+
+  -d, --debug  enable debug logging (default: false)
+  --grpc-addr  Address for gRPC api communication (default: /run/bpfd/bpfd.sock)
+  --rules-dir  Directory that stores the rules files (default: /etc/bpfd/rules)
+```
+
+### Create rules dynamically
+
+You can create rules on the fly with the `create` command. You can pass more
+than one file at a time.
+
+```console
+Usage: bpfd create [OPTIONS] RULE_FILE [RULE_FILE...]
+
+Create one or more rules.
+
+Flags:
+
+  -d, --debug  enable debug logging (default: false)
+  --grpc-addr  Address for gRPC api communication (default: /run/bpfd/bpfd.sock)
+```
+
+### Remove rules dynamically
+
+You can delete rules with the `rm` command. You can pass more than one
+rule name at a time.
+
+```console
+$ bpfd rm -h
+Usage: bpfd rm [OPTIONS] RULE_NAME [RULE_NAME...]
+
+Remove one or more rules.
+
+Flags:
+
+  -d, --debug  enable debug logging (default: false)
+  --grpc-addr  Address for gRPC api communication (default: /run/bpfd/bpfd.sock)
+```
+
+### List active rules
+
+You can list the rules that the daemon is filtering with by using the `ls`
+command.
+
+```console
+$ bpfd ls
+NAME                PROGRAM
+bashreadline        bashreadline
+password_files      open
+setuid_binaries     exec
+```
+
+### Live tracing events
+
+You can live trace the events returned after filtering with the `trace`
+command.
+
+This does not include past events. Consider it like a tail.
+
+```console
+$ bpfd trace
+INFO[0000] map[string]string{"filename":"/etc/shadow", "command":"sudo", "returnval":"4"}  container_id= container_runtime=not-found pid=12893 program=open tgid=0
+INFO[0000] map[string]string{"command":"sudo", "returnval":"4", "filename":"/etc/sudoers.d/README"}  container_id= container_runtime=not-found pid=12893 program=open tgid=0
+INFO[0000] map[string]string{"command":"sudo", "returnval":"4", "filename":"/etc/sudoers.d"}  container_id= container_runtime=not-found pid=12893 program=open tgid=0
+INFO[0000] map[string]string{"filename":"/etc/sudoers", "command":"sudo", "returnval":"3"}  container_id= container_runtime=not-found pid=12893 program=open tgid=0
+INFO[0000] map[string]string{"command":"sudo bpfd trace"}  container_id= container_runtime=not-found pid=23751 program=bashreadline tgid=0
+INFO[0000] map[string]string{"command":"vim README.md"}  container_id= container_runtime=not-found pid=23751 program=bashreadline tgid=0
+INFO[0000] map[string]string{"filename":"/etc/shadow", "command":"sudo", "returnval":"4"}  container_id= container_runtime=not-found pid=12786 program=open tgid=0
+INFO[0000] map[string]string{"command":"sudo", "returnval":"4", "filename":"/etc/sudoers.d/README"}  container_id= container_runtime=not-found pid=12786 program=open tgid=0
+INFO[0000] map[string]string{"filename":"/etc/sudoers.d", "command":"sudo", "returnval":"4"}  container_id= container_runtime=not-found pid=12786 program=open tgid=0
+INFO[0000] map[string]string{"filename":"/etc/sudoers", "command":"sudo", "returnval":"3"}  container_id= container_runtime=not-found pid=12786 program=open tgid=0
 ```

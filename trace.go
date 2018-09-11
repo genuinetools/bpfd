@@ -13,11 +13,12 @@ import (
 )
 
 const traceHelp = `Live trace the events returned after filtering.`
+const longHelp = traceHelp + "\n\nThis does not include past events. Consider it like a tail."
 
 func (cmd *traceCommand) Name() string      { return "trace" }
 func (cmd *traceCommand) Args() string      { return "[OPTIONS]" }
 func (cmd *traceCommand) ShortHelp() string { return traceHelp }
-func (cmd *traceCommand) LongHelp() string  { return traceHelp }
+func (cmd *traceCommand) LongHelp() string  { return longHelp }
 func (cmd *traceCommand) Hidden() bool      { return false }
 
 func (cmd *traceCommand) Register(fs *flag.FlagSet) {
