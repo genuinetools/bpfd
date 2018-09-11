@@ -14,14 +14,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
+type apiServer struct {
 	// TODO: don't store these in memory
 	rules map[string]map[string]grpc.Rule
 	// rulesMutex locks the buffer for every transaction.
-	rulesMutex = sync.Mutex{}
-)
+	rulesMutex sync.Mutex
 
-type apiServer struct {
 	programs map[string]program.Program
 	actions  map[string]action.Action
 
@@ -41,7 +39,13 @@ type Opts struct {
 
 // NewServer returns grpc server instance.
 func NewServer(opt Opts) (grpc.APIServer, error) {
-	rules = opt.Rules
+	server := &apiServer{
+		rules:       opt.Rules,
+		programs:    opt.Programs,
+		actions:     opt.Actions,
+		programList: opt.ProgramList,
+		actionList:  opt.ActionList,
+	}
 
 	// Load all the compiled in programs.
 	for p, prog := range opt.Programs {
@@ -63,7 +67,7 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 
 				event.ContainerRuntime = string(proc.GetContainerRuntime(int(event.TGID), int(event.PID)))
 
-				progRules, _ := rules[p]
+				progRules, _ := server.rules[p]
 
 				if len(progRules) < 1 {
 					// Just send to stdout and be done with it.
@@ -73,8 +77,7 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 
 				for _, rule := range progRules {
 					// Verify the event matches for the rules.
-					match, _ := rulespkg.Match(rule, event.Data, event.ContainerRuntime)
-					if !match {
+					if match := rulespkg.Match(rule, event.Data, event.ContainerRuntime); !match {
 						// We didn't find what we were searching for so continue.
 						continue
 					}
@@ -107,17 +110,12 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 		logrus.Infof("Watching events for plugin %s", p)
 	}
 
-	return &apiServer{
-		programs:    opt.Programs,
-		actions:     opt.Actions,
-		programList: opt.ProgramList,
-		actionList:  opt.ActionList,
-	}, nil
+	return server, nil
 }
 
 func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (*grpc.CreateRuleResponse, error) {
-	rulesMutex.Lock()
-	defer rulesMutex.Unlock()
+	s.rulesMutex.Lock()
+	defer s.rulesMutex.Unlock()
 
 	if c == nil || c.Rule == nil {
 		return nil, errors.New("rule cannot be nil")
@@ -137,22 +135,22 @@ func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (
 	}).Infof("Created rule")
 
 	// Check if we already have rules for the program to avoid a panic.
-	_, ok := rules[c.Rule.Program]
+	_, ok := s.rules[c.Rule.Program]
 	if !ok {
-		rules[c.Rule.Program] = map[string]grpc.Rule{c.Rule.Name: *c.Rule}
+		s.rules[c.Rule.Program] = map[string]grpc.Rule{c.Rule.Name: *c.Rule}
 		return &grpc.CreateRuleResponse{}, nil
 	}
 
 	// Add the rule to our existing rules for the program.
 	// TODO: decide to error or not on overwrite
-	rules[c.Rule.Program][c.Rule.Name] = *c.Rule
+	s.rules[c.Rule.Program][c.Rule.Name] = *c.Rule
 	return &grpc.CreateRuleResponse{}, nil
 }
 
 // TODO: find a better way to remove without program
 func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (*grpc.RemoveRuleResponse, error) {
-	rulesMutex.Lock()
-	defer rulesMutex.Unlock()
+	s.rulesMutex.Lock()
+	defer s.rulesMutex.Unlock()
 
 	if r == nil || len(r.Name) < 1 {
 		return nil, errors.New("rule name cannot be empty")
@@ -160,7 +158,7 @@ func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (
 
 	// If they passed the program then only remove the rule for that program.
 	if len(r.Program) > 0 {
-		delete(rules[r.Program], r.Name)
+		delete(s.rules[r.Program], r.Name)
 
 		logrus.WithFields(logrus.Fields{
 			"program": r.Program,
@@ -171,10 +169,10 @@ func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (
 	}
 
 	// Iterate over the programs and find the rule.
-	for p, prs := range rules {
+	for p, prs := range s.rules {
 		for name := range prs {
 			if name == r.Name {
-				delete(rules[p], r.Name)
+				delete(s.rules[p], r.Name)
 
 				logrus.WithFields(logrus.Fields{
 					"program": p,
@@ -191,7 +189,7 @@ func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (
 func (s *apiServer) ListRules(ctx context.Context, r *grpc.ListRulesRequest) (*grpc.ListRulesResponse, error) {
 	var rs []*grpc.Rule
 
-	for _, prs := range rules {
+	for _, prs := range s.rules {
 		for _, rule := range prs {
 			rs = append(rs, &rule)
 		}

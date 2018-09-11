@@ -104,11 +104,11 @@ func ValidateProgramsAndActions(rule grpc.Rule, programs, actions []string) erro
 }
 
 // Match checks the filter properties for a rule against the data from
-// the event. It returns a boolean and the actions for the rule.
-func Match(rule grpc.Rule, data map[string]string, pidRuntime string) (bool, []string) {
+// the event.
+func Match(rule grpc.Rule, data map[string]string, pidRuntime string) bool {
 	// Return early if we have nothing to filter on.
 	if len(rule.ContainerRuntimes) < 1 && len(rule.FilterEvents) < 1 {
-		return true, rule.Actions
+		return true
 	}
 
 	matchedRuntime := false
@@ -116,7 +116,7 @@ func Match(rule grpc.Rule, data map[string]string, pidRuntime string) (bool, []s
 		if pidRuntime == runtime {
 			// Return early if we know we have nothing else to filter on.
 			if len(rule.FilterEvents) < 1 {
-				return true, rule.Actions
+				return true
 			}
 
 			// Continue to the next check.
@@ -127,12 +127,12 @@ func Match(rule grpc.Rule, data map[string]string, pidRuntime string) (bool, []s
 
 	// Return early here if we never matched a runtime.
 	if len(rule.ContainerRuntimes) > 0 && !matchedRuntime {
-		return false, rule.Actions
+		return false
 	}
 
 	// Return early here if we have nothing else to filter on.
 	if len(rule.FilterEvents) < 1 {
-		return true, rule.Actions
+		return true
 	}
 
 	for key, ogValue := range data {
@@ -143,13 +143,13 @@ func Match(rule grpc.Rule, data map[string]string, pidRuntime string) (bool, []s
 		for _, find := range s.Values {
 			if strings.Contains(ogValue, find) {
 				// Return early since we have nothing else to filter on.
-				return true, rule.Actions
+				return true
 			}
 		}
 	}
 
 	// We did not match any filters.
-	return false, rule.Actions
+	return false
 }
 
 func in(a []string, s string) bool {
