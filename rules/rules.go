@@ -17,26 +17,9 @@ func ParseFiles(files ...string) (map[string]map[string]grpc.Rule, []string, err
 	names := []string{}
 
 	for _, file := range files {
-		b, err := ioutil.ReadFile(file)
+		rule, err := Parse(file)
 		if err != nil {
 			return nil, nil, fmt.Errorf("reading file %s failed: %v", file, err)
-		}
-
-		var rule grpc.Rule
-		if _, err := toml.Decode(string(b), &rule); err != nil {
-			return nil, nil, fmt.Errorf("decoding file %s as rule failed: %v", file, err)
-		}
-
-		if len(rule.Name) < 1 {
-			rule.Name = strings.TrimSuffix(filepath.Base(file), ".toml")
-		}
-
-		if len(rule.Name) < 1 {
-			return nil, nil, errors.New("rule name cannot be empty")
-		}
-
-		if len(rule.Program) < 1 {
-			return nil, nil, errors.New("rule program cannot be empty")
 		}
 
 		names = append(names, rule.Name)
@@ -53,4 +36,31 @@ func ParseFiles(files ...string) (map[string]map[string]grpc.Rule, []string, err
 	}
 
 	return rules, names, nil
+}
+
+// Parse parses a rules file and returns the rule.
+func Parse(file string) (grpc.Rule, error) {
+	b, err := ioutil.ReadFile(file)
+	if err != nil {
+		return grpc.Rule{}, fmt.Errorf("reading file %s failed: %v", file, err)
+	}
+
+	var rule grpc.Rule
+	if _, err := toml.Decode(string(b), &rule); err != nil {
+		return grpc.Rule{}, fmt.Errorf("decoding file %s as rule failed: %v", file, err)
+	}
+
+	if len(rule.Name) < 1 {
+		rule.Name = strings.TrimSuffix(filepath.Base(file), ".toml")
+	}
+
+	if len(rule.Name) < 1 {
+		return grpc.Rule{}, errors.New("rule name cannot be empty")
+	}
+
+	if len(rule.Program) < 1 {
+		return grpc.Rule{}, errors.New("rule program cannot be empty")
+	}
+
+	return rule, nil
 }
