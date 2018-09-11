@@ -80,6 +80,9 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 				if len(progRules) < 1 {
 					// Just send to stdout and be done with it.
 					opt.Actions["stdout"].Do(event)
+
+					// Add this event to our queue of events if we are streaming.
+					server.addEvent(*event)
 					continue
 				}
 
@@ -111,7 +114,7 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 
 		// Start the program.
 		prog.Start()
-		logrus.Infof("Watching events for plugin %s", p)
+		logrus.Infof("Watching events for plugin: %s", p)
 	}
 
 	return server, nil
@@ -207,21 +210,24 @@ func (s *apiServer) LiveTrace(l *grpc.LiveTraceRequest, stream grpc.API_LiveTrac
 	s.isStreaming = true
 
 	for s.isStreaming {
+		if err := stream.Context().Err(); err != nil {
+			s.isStreaming = false
+			break
+		}
+
 		event := s.popEvent()
 		if event == nil {
 			continue
 		}
 
 		if err := stream.Send(event); err != nil {
+			s.isStreaming = false
+			logrus.Debug("live trace streaming client DISCONNECTED")
 			return err
 		}
 
-		if err := stream.Context().Err(); err != nil {
-			s.isStreaming = false
-			logrus.Debug("live trace streaming client DISCONNECTED")
-			break
-		}
 	}
 
+	logrus.Debug("live trace streaming client DISCONNECTED")
 	return nil
 }
