@@ -14,6 +14,10 @@ const (
 
 type stdoutAction struct{}
 
+func init() {
+	action.Register(name, Init)
+}
+
 // Init returns a new stdout action.
 func Init() (action.Action, error) {
 	return &stdoutAction{}, nil
