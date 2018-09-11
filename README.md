@@ -27,12 +27,12 @@ Framework for running BPF programs with rules on Linux as a daemon. Container aw
 
 ## How it Works
 
-[**Programs**](#programs) retrieve the data... 
-[**Rules**](#rules) filter the data... 
+[**Programs**](#programs) retrieve the data...
+[**Rules**](#rules) filter the data...
 [**Actions**](#actions) perform actions on the data.
 
-The programs are in the [program/ folder](program). 
-The idea is that you can add any tracers you would like 
+The programs are in the [program/ folder](program).
+The idea is that you can add any tracers you would like
 and then create [rules](examples) for the data retrieved from the programs.
 Any events with data that passes the filters will be passed on to the specified
 action.
@@ -40,7 +40,7 @@ action.
 ### Programs
 
 The programs that exist today are based off a few
-[bcc-tools](https://github.com/iovisor/bcc) programs. 
+[bcc-tools](https://github.com/iovisor/bcc) programs.
 
 You could always add your own programs in a fork if you worry people will
 reverse engineer the data you are collecting and alerting on.
@@ -91,12 +91,12 @@ type Event struct {
 
 ### Rules
 
-These are toml files that hold some logic for what you would like to trace. 
+These are toml files that hold some logic for what you would like to trace.
 You can search for anything returned by a `Program` in its `map[string]string`
 data struct.
 
 You can also filter based off the container runtime you would like to alert on.
-The container runtime must be one of the strings defined 
+The container runtime must be one of the strings defined
 [here](https://github.com/jessfraz/bpfd/blob/master/proc/proc.go#L24).
 
 If you provide no rules for a program, then _all_ the events will be passed to
@@ -121,9 +121,15 @@ containerRuntimes = ["docker","kube"]
 If you are wondering where the `command` key comes from, it's defined in the
 `exec` program [here](https://github.com/jessfraz/bpfd/blob/master/program/exec/exec.go#L200).
 
+Rules can be dynamically controlled via bpfd's [gRPC](https://grpc.io/) interface.
+
+The protobuf protocol definition is defined in [api/grpc/api.proto](https://github.com/jessfraz/bpfd/blob/master/api/grpc/api.proto)
+
+To enable gRPC control of bpfd you must use the [--gpc-addr](#usage) flag.
+
 ### Actions
 
-Actions do "something" on an event. This way you can send filtered events to 
+Actions do "something" on an event. This way you can send filtered events to
 Slack, email, or even run arbitrary code. You could
 kill a container, pause a container, or checkpoint a container to restore it
 elsewhere without even having to login to a computer.
