@@ -148,14 +148,13 @@ clean: ## Cleanup any build binaries or packages
 	$(RM) -r $(BUILDDIR)
 
 check_defined = \
-				$(strip $(foreach 1,$1, \
-				$(call __check_defined,$1,$(strip $(value 2)))))
-__check_defined = \
-				  $(if $(value $1),, \
-				  $(error Undefined $1$(if $2, ($2))$(if $(value @), \
-				  required by target `$@')))
+    $(strip $(foreach 1,$1, \
+	$(call __check_defined,$1,$(strip $(value 2)))))
 
-__check_defined = $(if $(value $1),,$(error Undefined $1$(if $2, ($2))$(if $(value @),required by target `$@')))
+__check_defined = \
+    $(if $(value $1),, \
+    $(error Undefined $1$(if $2, ($2))$(if $(value @), \
+    required by target `$@')))
 
 DOCKER_FLAGS := --rm -i \
 	--disable-content-trust=true
@@ -187,7 +186,7 @@ GRPC_API_DIR=api/grpc
 .PHONY:protoc
 protoc: $(CURDIR)/$(GRPC_API_DIR)/api.pb.go ## Generate the protobuf files
 
-$(GRPC_API_DIR)/api.pb.go: image $(CURDIR)/$(GRPC_API_DIR)/api.proto
+$(CURDIR)/$(GRPC_API_DIR)/api.pb.go: image $(CURDIR)/$(GRPC_API_DIR)/api.proto
 	docker run $(DOCKER_FLAGS) \
 		$(DOCKER_IMAGE) \
 		protoc -I ./$(GRPC_API_DIR) \
