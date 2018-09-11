@@ -11,6 +11,7 @@ import (
 	"github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
+	rulespkg "github.com/jessfraz/bpfd/rules"
 	"github.com/sirupsen/logrus"
 )
 
@@ -73,7 +74,7 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 
 				for _, rule := range progRules {
 					// Verify the event matches for the rules.
-					match, actions := program.Match(rule, event.Data, event.ContainerRuntime)
+					match, actions := rulespkg.Match(rule, event.Data, event.ContainerRuntime)
 					if !match {
 						// We didn't find what we were searching for so continue.
 						continue

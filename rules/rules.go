@@ -64,3 +64,62 @@ func Parse(file string) (grpc.Rule, error) {
 
 	return rule, nil
 }
+
+// Match checks the filter properties for a rule against the data from
+// the event. It returns a boolean and the actions for the rule.
+// TODO: make better
+func Match(rule grpc.Rule, data map[string]string, pidRuntime string) (bool, []string) {
+	hasFilters := false
+	hasRuntimeFilter := false
+	correctRuntime := false
+	passedFilters := false
+
+	for _, runtime := range rule.ContainerRuntimes {
+		hasRuntimeFilter = true
+		if pidRuntime == runtime {
+			correctRuntime = true
+			if passedFilters {
+				// return early
+				return true, rule.Actions
+			}
+		}
+	}
+
+	for key, ogValue := range data {
+		s, ok := rule.FilterEvents[key]
+		if !ok {
+			continue
+		}
+		for _, find := range s.Values {
+			hasFilters = true
+			if strings.Contains(ogValue, find) {
+				passedFilters = true
+				if correctRuntime {
+					// return early
+					return true, rule.Actions
+				}
+			}
+		}
+	}
+
+	if !hasFilters && !hasRuntimeFilter {
+		// In the case that we do not have any for searches or filters then we can
+		// return true to return all events.
+		return true, rule.Actions
+	}
+
+	if hasFilters && hasRuntimeFilter && correctRuntime && passedFilters {
+		// This is the case where everything matched.
+		return true, rule.Actions
+	}
+
+	if hasRuntimeFilter && !hasFilters && correctRuntime {
+		return true, rule.Actions
+	}
+
+	if hasFilters && !hasRuntimeFilter && passedFilters {
+		return true, rule.Actions
+	}
+
+	return false, nil
+}
