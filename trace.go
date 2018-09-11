@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const traceHelp = `Trace the events returned after filtering.`
+const traceHelp = `Live trace the events returned after filtering.`
 
 func (cmd *traceCommand) Name() string      { return "trace" }
 func (cmd *traceCommand) Args() string      { return "[OPTIONS]" }
@@ -48,7 +48,7 @@ func (cmd *traceCommand) Run(ctx context.Context, args []string) error {
 	for {
 		event, err := client.LiveTrace(context.Background(), &grpc.LiveTraceRequest{})
 		if err != nil {
-			logrus.Fatalf("sending ListRules request failed: %v", err)
+			logrus.Fatalf("sending LiveTrace request failed: %v", err)
 		}
 
 		if event == nil {

@@ -46,16 +46,16 @@ These must implement the `Program` interface:
 ```go
 // Program defines the basic capabilities of a program.
 type Program interface {
-	// String returns a string representation of this program.
-	String() string
-	// Load creates the bpf module and starts collecting the data for the program.
-	Load() error
-	// Unload closes the bpf module and all the probes that all attached to it.
-	Unload()
-	// WatchEvent defines the function to watch the events for the program.
-	WatchEvent() (*Event, error)
-	// Start starts the map for the program.
-	Start()
+    // String returns a string representation of this program.
+    String() string
+    // Load creates the bpf module and starts collecting the data for the program.
+    Load() error
+    // Unload closes the bpf module and all the probes that all attached to it.
+    Unload()
+    // WatchEvent defines the function to watch the events for the program.
+    WatchEvent() (*grpc.Event, error)
+    // Start starts the map for the program.
+    Start()
 }
 ```
 
@@ -74,6 +74,7 @@ type Event struct {
     Data             map[string]string
     ContainerRuntime proc.ContainerRuntime // Filled in after the program is run so you don't need to.
     ContainerID      string                // Filled in after the program is run so you don't need to.
+    Program          string                // Filled in after the program is run so you don't need to.
 }
 ```
 
@@ -152,7 +153,8 @@ Usage: bpfd <command>
 
 Flags:
 
-  -d  enable debug logging (default: false)
+  -d, --debug  enable debug logging (default: false)
+  --grpc-addr  Address for gRPC api communication (default: /run/bpfd/bpfd.sock)
 
 Commands:
 
@@ -160,5 +162,6 @@ Commands:
   daemon   Start the daemon.
   ls       List rules.
   rm       Remove one or more rules.
+  trace    Live trace the events returned after filtering.
   version  Show the version information.
 ```

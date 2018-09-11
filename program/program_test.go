@@ -114,7 +114,7 @@ func TestMatch(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
-		match := Match(tc.rules, tc.data, tc.runtime)
+		match := Match(tc.rules, tc.data, string(tc.runtime))
 		if match != tc.expected {
 			t.Errorf("[%s]: expected match to be %t, got %t", name, tc.expected, match)
 		}

@@ -47,9 +47,9 @@ message Event {
   uint32 PID = 1;
   uint32 TGID = 2;
   map<string, string> data = 3;
-  string containerID = 4;
-  string containerRuntime = 5;
-  string program = 6; // Name of program
+  string containerID = 4; // Filled in after the program is run so you don't need to.
+  string containerRuntime = 5; // Filled in after the program is run so you don't need to.
+  string program = 6; // Filled in after the program is run so you don't need to.
 }
 
 message LiveTraceRequest {
