@@ -42,9 +42,20 @@ func popEvent() *grpc.Event {
 	return nil
 }
 
+// getEvent will get a event from the bottom of the heap.
+func getEvent() *grpc.Event {
+	if len(events) > 0 {
+		event := events[len(events)-1]
+		return &event
+	}
+
+	return nil
+}
+
 func (s *apiServer) LiveTrace(ctx context.Context, l *grpc.LiveTraceRequest) (*grpc.Event, error) {
-	// Pop a event off the queue (or nil).
-	event := popEvent()
+	// TODO: make this less shitty.
+	// Get an event off the queue (or nil).
+	event := getEvent()
 
 	// Handle nil case so we don't get error: "proto: Marshal called with nil".
 	if event == nil {

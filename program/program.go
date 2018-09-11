@@ -38,7 +38,7 @@ func init() {
 // Register registers an InitFunc for the program.
 func Register(name string, initFunc InitFunc) error {
 	if _, exists := programs[name]; exists {
-		return fmt.Errorf("Name already registered %s", name)
+		return fmt.Errorf("program name already registered %s", name)
 	}
 	programs[name] = initFunc
 
@@ -72,64 +72,61 @@ func UnloadAll() {
 	}
 }
 
-// Match checks the rules search and filter properties against the data from
-// the event.
-// TODO: combine so we are not iterating over the rules twice.
-func Match(rules map[string]grpc.Rule, data map[string]string, pidRuntime string) bool {
+// Match checks the filter properties for a rule against the data from
+// the event. It returns a boolean and the actions for the rule.
+// TODO: make better
+func Match(rule grpc.Rule, data map[string]string, pidRuntime string) (bool, []string) {
 	hasFilters := false
 	hasRuntimeFilter := false
 	correctRuntime := false
 	passedFilters := false
 
-	for _, rule := range rules {
-		for _, runtime := range rule.ContainerRuntimes {
-			hasRuntimeFilter = true
-			if pidRuntime == runtime {
-				correctRuntime = true
-				if passedFilters {
+	for _, runtime := range rule.ContainerRuntimes {
+		hasRuntimeFilter = true
+		if pidRuntime == runtime {
+			correctRuntime = true
+			if passedFilters {
+				// return early
+				return true, rule.Actions
+			}
+		}
+	}
+
+	for key, ogValue := range data {
+		s, ok := rule.FilterEvents[key]
+		if !ok {
+			continue
+		}
+		for _, find := range s.Values {
+			hasFilters = true
+			if strings.Contains(ogValue, find) {
+				passedFilters = true
+				if correctRuntime {
 					// return early
-					return true
+					return true, rule.Actions
 				}
 			}
 		}
-
-		for key, ogValue := range data {
-			s, ok := rule.FilterEvents[key]
-			if !ok {
-				continue
-			}
-			for _, find := range s.Values {
-				hasFilters = true
-				if strings.Contains(ogValue, find) {
-					passedFilters = true
-					if correctRuntime {
-						// return early
-						return true
-					}
-				}
-			}
-		}
-
 	}
 
 	if !hasFilters && !hasRuntimeFilter {
 		// In the case that we do not have any for searches or filters then we can
 		// return true to return all events.
-		return true
+		return true, rule.Actions
 	}
 
 	if hasFilters && hasRuntimeFilter && correctRuntime && passedFilters {
 		// This is the case where everything matched.
-		return true
+		return true, rule.Actions
 	}
 
 	if hasRuntimeFilter && !hasFilters && correctRuntime {
-		return true
+		return true, rule.Actions
 	}
 
 	if hasFilters && !hasRuntimeFilter && passedFilters {
-		return true
+		return true, rule.Actions
 	}
 
-	return false
+	return false, nil
 }

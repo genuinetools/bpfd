@@ -33,6 +33,7 @@ message Rule {
   string program = 2; // Name of program
   map<string, Filter> filterEvents = 3; // Filters for the events
   repeated string containerRuntimes = 4; // Container runtimes to apply the rule to
+  repeated string actions = 5; // Actions to perform when this rule matches an event
 }
 
 message Filter {

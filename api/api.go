@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/jessfraz/bpfd/action"
 	"github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/proc"
 	"github.com/jessfraz/bpfd/program"
@@ -30,6 +31,10 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 	programs := program.List()
 	logrus.Infof("Daemon compiled with programs: %s", strings.Join(programs, ", "))
 
+	// List all the compiled in actions.
+	actions := action.List()
+	logrus.Infof("Daemon compiled with actions: %s", strings.Join(actions, ", "))
+
 	// Load all the compiled in programs.
 	for _, p := range programs {
 		// We can ignore the error below since we are using the list from our code
@@ -47,7 +52,7 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 					logrus.Warnf("watch event for program %s failed: %v", p, err)
 				}
 
-				if event == nil {
+				if event == nil || event.Data == nil {
 					continue
 				}
 
@@ -55,17 +60,45 @@ func NewServer(r map[string]map[string]grpc.Rule) (grpc.APIServer, error) {
 
 				progRules, _ := rules[p]
 
-				// Verify the event matches for the rules.
-				if !program.Match(progRules, event.Data, event.ContainerRuntime) {
-					// We didn't find what we were searching for so continue.
+				if len(progRules) < 1 {
+					// Just send to stdout and be done with it.
+					action, err := action.Get("stdout")
+					if err != nil {
+						logrus.Warn(err)
+						continue
+					}
+					action.Do(event)
 					continue
 				}
 
-				event.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
-				event.Program = p
+				for _, rule := range progRules {
+					// Verify the event matches for the rules.
+					match, actions := program.Match(rule, event.Data, event.ContainerRuntime)
+					if !match {
+						// We didn't find what we were searching for so continue.
+						continue
+					}
 
-				// Add this event to our list of events.
-				addEvent(*event)
+					event.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
+					event.Program = p
+
+					// Add this event to our queue of events.
+					// addEvent(*event)
+
+					// Perform the actions.
+					for _, a := range actions {
+						action, err := action.Get(a)
+						if err != nil {
+							logrus.Warn(err)
+							continue
+						}
+						action.Do(event)
+					}
+
+					// Remove the event from the queue.
+					// popEvent()
+				}
+
 			}
 		}(p, prog)
 

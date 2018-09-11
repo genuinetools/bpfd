@@ -23,6 +23,9 @@ import (
 	_ "github.com/jessfraz/bpfd/program/bashreadline"
 	_ "github.com/jessfraz/bpfd/program/exec"
 	_ "github.com/jessfraz/bpfd/program/open"
+
+	// Register the builtin actions.
+	_ "github.com/jessfraz/bpfd/action/stdout"
 )
 
 const daemonHelp = `Start the daemon.`

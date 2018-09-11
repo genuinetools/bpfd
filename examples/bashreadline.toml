@@ -1,1 +1,3 @@
 program = "bashreadline"
+
+actions = ["stdout"]
