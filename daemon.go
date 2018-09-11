@@ -72,6 +72,16 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	}
 	logrus.Infof("Loaded rules: %s", strings.Join(names, ", "))
 
+	// Create the directory if it doesn't exist.
+	if err := os.MkdirAll(filepath.Dir(grpcAddress), 0755); err != nil {
+		return fmt.Errorf("creating directory %s failed: %v", filepath.Dir(grpcAddress), err)
+	}
+
+	// Remove the old socket.
+	if err := os.RemoveAll(grpcAddress); err != nil {
+		logrus.Warnf("attempt to remove old sock %s failed: %v", grpcAddress, err)
+	}
+
 	// Start the grpc api server.
 	l, err := net.Listen("unix", grpcAddress)
 	if err != nil {
