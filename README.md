@@ -6,6 +6,15 @@
 
 Framework for running BPF tracers with rules on Linux as a daemon. Container aware.
 
+This is not just "yet another tool to trace"...
+
+Since it uses BPF and allows for any implementation of the `Tracer` interface you
+can use it to do all sorts of things from modifying a file everytime a call to `open` is
+called on it, to hot patching an internal kernel function to prevent a known vulnerability
+without the need to upgrade your kernel.
+
+More use cases with examples coming soon... for now see [how it works](#how-it-works).
+
 **Table of Contents**
 
  * [How it Works](README.md#how-it-works)
