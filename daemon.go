@@ -15,15 +15,15 @@ import (
 	"github.com/jessfraz/bpfd/action"
 	"github.com/jessfraz/bpfd/api"
 	types "github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/program"
 	"github.com/jessfraz/bpfd/rules"
+	"github.com/jessfraz/bpfd/tracer"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
-	// Register the builtin programs.
-	_ "github.com/jessfraz/bpfd/program/bashreadline"
-	_ "github.com/jessfraz/bpfd/program/exec"
-	_ "github.com/jessfraz/bpfd/program/open"
+	// Register the builtin tracers.
+	_ "github.com/jessfraz/bpfd/tracer/bashreadline"
+	_ "github.com/jessfraz/bpfd/tracer/exec"
+	_ "github.com/jessfraz/bpfd/tracer/open"
 
 	// Register the builtin actions.
 	_ "github.com/jessfraz/bpfd/action/kill"
@@ -54,8 +54,8 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	go func() {
 		for sig := range c {
 			logrus.Infof("Received %s, exiting", sig.String())
-			logrus.Info("Gracefully shutting down and unloading all programs")
-			program.UnloadAll()
+			logrus.Info("Gracefully shutting down and unloading all tracers")
+			tracer.UnloadAll()
 			os.Exit(0)
 		}
 	}()
@@ -77,18 +77,18 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	}
 	logrus.Infof("Loaded rules: %s", strings.Join(names, ", "))
 
-	// List all the compiled in programs.
-	programList := program.List()
-	logrus.Infof("Daemon compiled with programs: %s", strings.Join(programList, ", "))
-	programs := map[string]program.Program{}
-	for _, p := range programList {
-		prog, err := program.Get(p)
+	// List all the compiled in tracers.
+	tracerList := tracer.List()
+	logrus.Infof("Daemon compiled with tracers: %s", strings.Join(tracerList, ", "))
+	tracers := map[string]tracer.Tracer{}
+	for _, p := range tracerList {
+		prog, err := tracer.Get(p)
 		if err != nil {
 			return err
 		}
-		programs[p] = prog
+		tracers[p] = prog
 	}
-	logrus.Debugf("programs: %#v", programs)
+	logrus.Debugf("tracers: %#v", tracers)
 
 	// List all the compiled in actions.
 	actionList := action.List()
@@ -103,10 +103,10 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	}
 	logrus.Debugf("actions: %#v", actions)
 
-	// Validate the rules against the programs and actions.
+	// Validate the rules against the tracers and actions.
 	for _, prs := range rls {
 		for _, r := range prs {
-			if err := rules.ValidateProgramsAndActions(r, programList, actionList); err != nil {
+			if err := rules.ValidateTracersAndActions(r, tracerList, actionList); err != nil {
 				return err
 			}
 		}
@@ -129,11 +129,11 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 	}
 	s := grpc.NewServer()
 	opt := api.Opts{
-		Rules:       rls,
-		Programs:    programs,
-		Actions:     actions,
-		ProgramList: programList,
-		ActionList:  actionList,
+		Rules:      rls,
+		Tracers:    tracers,
+		Actions:    actions,
+		TracerList: tracerList,
+		ActionList: actionList,
 	}
 	svr, err := api.NewServer(opt)
 	if err != nil {

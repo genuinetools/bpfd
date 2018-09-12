@@ -12,7 +12,7 @@ import (
 	"github.com/jessfraz/bpfd/proc"
 )
 
-// ParseFiles parses the rules files and returns an array of rules for each program.
+// ParseFiles parses the rules files and returns an array of rules for each tracer.
 func ParseFiles(files ...string) (map[string]map[string]grpc.Rule, []string, error) {
 	rules := map[string]map[string]grpc.Rule{}
 	names := []string{}
@@ -25,15 +25,15 @@ func ParseFiles(files ...string) (map[string]map[string]grpc.Rule, []string, err
 
 		names = append(names, rule.Name)
 
-		// Add the rule to our existing rules for the program.
+		// Add the rule to our existing rules for the tracer.
 		// TODO: decide to error or not on overwrite
-		_, ok := rules[rule.Program]
+		_, ok := rules[rule.Tracer]
 		if !ok {
-			rules[rule.Program] = map[string]grpc.Rule{rule.Name: rule}
+			rules[rule.Tracer] = map[string]grpc.Rule{rule.Name: rule}
 			continue
 		}
 
-		rules[rule.Program][rule.Name] = rule
+		rules[rule.Tracer][rule.Name] = rule
 	}
 
 	return rules, names, nil
@@ -70,9 +70,9 @@ func Validate(rule grpc.Rule) error {
 		return errors.New("rule name cannot be empty")
 	}
 
-	// Check the program name.
-	if len(rule.Program) < 1 {
-		return errors.New("rule program cannot be empty")
+	// Check the tracer name.
+	if len(rule.Tracer) < 1 {
+		return errors.New("rule tracer cannot be empty")
 	}
 
 	// Check the container runtimes against the valid container runtimes.
@@ -85,12 +85,12 @@ func Validate(rule grpc.Rule) error {
 	return nil
 }
 
-// ValidateProgramsAndActions checks that the program and action parts of a rule
+// ValidateTracersAndActions checks that the tracer and action parts of a rule
 // are valid against the given options.
-func ValidateProgramsAndActions(rule grpc.Rule, programs, actions []string) error {
-	// Check that the program is valid.
-	if !in(programs, rule.Program) {
-		return fmt.Errorf("[%s]: %s is not a valid program", rule.Name, rule.Program)
+func ValidateTracersAndActions(rule grpc.Rule, tracers, actions []string) error {
+	// Check that the tracer is valid.
+	if !in(tracers, rule.Tracer) {
+		return fmt.Errorf("[%s]: %s is not a valid tracer", rule.Name, rule.Tracer)
 	}
 
 	// Check that the actions are valid.

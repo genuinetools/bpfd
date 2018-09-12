@@ -19,7 +19,7 @@ message CreateRuleResponse {
 
 message RemoveRuleRequest {
   string name = 1; // Name of rule
-  string program = 2; // Name of program
+  string tracer = 2; // Name of tracer
 }
 
 message RemoveRuleResponse {
@@ -30,7 +30,7 @@ message ListRulesRequest {
 
 message Rule {
   string name = 1; // Name of rule
-  string program = 2; // Name of program
+  string tracer = 2; // Name of tracer
   map<string, Filter> filterEvents = 3; // Filters for the events
   repeated string containerRuntimes = 4; // Container runtimes to apply the rule to
   repeated string actions = 5; // Actions to perform when this rule matches an event
@@ -48,9 +48,9 @@ message Event {
   uint32 PID = 1;
   uint32 TGID = 2;
   map<string, string> data = 3;
-  string containerID = 4; // Filled in after the program is run so you don't need to.
-  string containerRuntime = 5; // Filled in after the program is run so you don't need to.
-  string program = 6; // Filled in after the program is run so you don't need to.
+  string containerID = 4; // Filled in after the tracer is run so you don't need to.
+  string containerRuntime = 5; // Filled in after the tracer is run so you don't need to.
+  string tracer = 6; // Filled in after the tracer is run so you don't need to.
 }
 
 message LiveTraceRequest {

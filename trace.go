@@ -70,7 +70,7 @@ func (cmd *traceCommand) Run(ctx context.Context, args []string) error {
 		}
 
 		logrus.WithFields(logrus.Fields{
-			"program":           event.Program,
+			"tracer":            event.Tracer,
 			"pid":               fmt.Sprintf("%d", event.PID),
 			"tgid":              fmt.Sprintf("%d", event.TGID),
 			"container_runtime": string(event.ContainerRuntime),

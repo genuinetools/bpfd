@@ -8,7 +8,7 @@ import (
 
 	bpf "github.com/iovisor/gobpf/bcc"
 	"github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/program"
+	"github.com/jessfraz/bpfd/tracer"
 )
 
 const (
@@ -106,29 +106,29 @@ type execEvent struct {
 }
 
 func init() {
-	program.Register(name, Init)
+	tracer.Register(name, Init)
 }
 
-type bpfprogram struct {
+type bpftracer struct {
 	module  *bpf.Module
 	perfMap *bpf.PerfMap
 	channel chan []byte
 	argv    map[uint32][]string
 }
 
-// Init returns a new bashreadline program.
-func Init() (program.Program, error) {
-	return &bpfprogram{
+// Init returns a new bashreadline tracer.
+func Init() (tracer.Tracer, error) {
+	return &bpftracer{
 		channel: make(chan []byte),
 		argv:    map[uint32][]string{},
 	}, nil
 }
 
-func (p *bpfprogram) String() string {
+func (p *bpftracer) String() string {
 	return name
 }
 
-func (p *bpfprogram) Load() error {
+func (p *bpftracer) Load() error {
 	p.module = bpf.NewModule(source, []string{})
 
 	execKprobe, err := p.module.LoadKprobe("syscall__execve")
@@ -162,7 +162,7 @@ func (p *bpfprogram) Load() error {
 	return nil
 }
 
-func (p *bpfprogram) WatchEvent() (*grpc.Event, error) {
+func (p *bpftracer) WatchEvent() (*grpc.Event, error) {
 	var event execEvent
 	data := <-p.channel
 	if err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event); err != nil {
@@ -208,11 +208,11 @@ func (p *bpfprogram) WatchEvent() (*grpc.Event, error) {
 	return e, nil
 }
 
-func (p *bpfprogram) Start() {
+func (p *bpftracer) Start() {
 	p.perfMap.Start()
 }
 
-func (p *bpfprogram) Unload() {
+func (p *bpftracer) Unload() {
 	if p.perfMap != nil {
 		p.perfMap.Stop()
 	}

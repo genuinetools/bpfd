@@ -38,10 +38,10 @@ func (cmd *listCommand) Run(ctx context.Context, args []string) error {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 20, 1, 3, ' ', 0)
-	fmt.Fprint(w, "NAME\tPROGRAM\n")
+	fmt.Fprint(w, "NAME\tTRACER\n")
 
 	for _, rule := range resp.Rules {
-		fmt.Fprintf(w, "%s\t%s\n", rule.Name, rule.Program)
+		fmt.Fprintf(w, "%s\t%s\n", rule.Name, rule.Tracer)
 	}
 
 	w.Flush()

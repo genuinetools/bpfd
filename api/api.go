@@ -9,8 +9,8 @@ import (
 	"github.com/jessfraz/bpfd/action"
 	"github.com/jessfraz/bpfd/api/grpc"
 	"github.com/jessfraz/bpfd/proc"
-	"github.com/jessfraz/bpfd/program"
 	rulespkg "github.com/jessfraz/bpfd/rules"
+	"github.com/jessfraz/bpfd/tracer"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,11 +20,11 @@ type apiServer struct {
 	// rulesMutex locks the buffer for every transaction.
 	rulesMutex sync.Mutex
 
-	programs map[string]program.Program
-	actions  map[string]action.Action
+	tracers map[string]tracer.Tracer
+	actions map[string]action.Action
 
-	programList []string
-	actionList  []string
+	tracerList []string
+	actionList []string
 
 	isStreaming bool
 
@@ -36,36 +36,36 @@ type apiServer struct {
 
 // Opts holds the options for a server.
 type Opts struct {
-	Rules    map[string]map[string]grpc.Rule
-	Programs map[string]program.Program
-	Actions  map[string]action.Action
+	Rules   map[string]map[string]grpc.Rule
+	Tracers map[string]tracer.Tracer
+	Actions map[string]action.Action
 
-	ProgramList []string
-	ActionList  []string
+	TracerList []string
+	ActionList []string
 }
 
 // NewServer returns grpc server instance.
 func NewServer(opt Opts) (grpc.APIServer, error) {
 	server := &apiServer{
-		rules:       opt.Rules,
-		programs:    opt.Programs,
-		actions:     opt.Actions,
-		programList: opt.ProgramList,
-		actionList:  opt.ActionList,
+		rules:      opt.Rules,
+		tracers:    opt.Tracers,
+		actions:    opt.Actions,
+		tracerList: opt.TracerList,
+		actionList: opt.ActionList,
 	}
 
-	// Load all the compiled in programs.
-	for p, prog := range opt.Programs {
+	// Load all the compiled in tracers.
+	for p, prog := range opt.Tracers {
 		if err := prog.Load(); err != nil {
-			return nil, fmt.Errorf("loading program %s failed: %v", p, err)
+			return nil, fmt.Errorf("loading tracer %s failed: %v", p, err)
 		}
 
-		go func(p string, prog program.Program) {
+		go func(p string, prog tracer.Tracer) {
 			for {
-				// Watch the events for the program.
+				// Watch the events for the tracer.
 				event, err := prog.WatchEvent()
 				if err != nil {
-					logrus.Warnf("watch event for program %s failed: %v", p, err)
+					logrus.Warnf("watch event for tracer %s failed: %v", p, err)
 				}
 
 				if event == nil || event.Data == nil {
@@ -73,7 +73,7 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 				}
 
 				event.ContainerRuntime = string(proc.GetContainerRuntime(int(event.TGID), int(event.PID)))
-				event.Program = p
+				event.Tracer = p
 
 				progRules, _ := server.rules[p]
 
@@ -112,7 +112,7 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 			}
 		}(p, prog)
 
-		// Start the program.
+		// Start the tracer.
 		prog.Start()
 		logrus.Infof("Watching events for plugin: %s", p)
 	}
@@ -132,29 +132,29 @@ func (s *apiServer) CreateRule(ctx context.Context, c *grpc.CreateRuleRequest) (
 	if err := rulespkg.Validate(*c.Rule); err != nil {
 		return nil, err
 	}
-	if err := rulespkg.ValidateProgramsAndActions(*c.Rule, s.programList, s.actionList); err != nil {
+	if err := rulespkg.ValidateTracersAndActions(*c.Rule, s.tracerList, s.actionList); err != nil {
 		return nil, err
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"program": c.Rule.Program,
-		"name":    c.Rule.Name,
+		"tracer": c.Rule.Tracer,
+		"name":   c.Rule.Name,
 	}).Infof("Created rule")
 
-	// Check if we already have rules for the program to avoid a panic.
-	_, ok := s.rules[c.Rule.Program]
+	// Check if we already have rules for the tracer to avoid a panic.
+	_, ok := s.rules[c.Rule.Tracer]
 	if !ok {
-		s.rules[c.Rule.Program] = map[string]grpc.Rule{c.Rule.Name: *c.Rule}
+		s.rules[c.Rule.Tracer] = map[string]grpc.Rule{c.Rule.Name: *c.Rule}
 		return &grpc.CreateRuleResponse{}, nil
 	}
 
-	// Add the rule to our existing rules for the program.
+	// Add the rule to our existing rules for the tracer.
 	// TODO: decide to error or not on overwrite
-	s.rules[c.Rule.Program][c.Rule.Name] = *c.Rule
+	s.rules[c.Rule.Tracer][c.Rule.Name] = *c.Rule
 	return &grpc.CreateRuleResponse{}, nil
 }
 
-// TODO: find a better way to remove without program
+// TODO: find a better way to remove without tracer
 func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (*grpc.RemoveRuleResponse, error) {
 	s.rulesMutex.Lock()
 	defer s.rulesMutex.Unlock()
@@ -163,27 +163,27 @@ func (s *apiServer) RemoveRule(ctx context.Context, r *grpc.RemoveRuleRequest) (
 		return nil, errors.New("rule name cannot be empty")
 	}
 
-	// If they passed the program then only remove the rule for that program.
-	if len(r.Program) > 0 {
-		delete(s.rules[r.Program], r.Name)
+	// If they passed the tracer then only remove the rule for that tracer.
+	if len(r.Tracer) > 0 {
+		delete(s.rules[r.Tracer], r.Name)
 
 		logrus.WithFields(logrus.Fields{
-			"program": r.Program,
-			"name":    r.Name,
+			"tracer": r.Tracer,
+			"name":   r.Name,
 		}).Infof("Deleted rule")
 
 		return &grpc.RemoveRuleResponse{}, nil
 	}
 
-	// Iterate over the programs and find the rule.
+	// Iterate over the tracers and find the rule.
 	for p, prs := range s.rules {
 		for name := range prs {
 			if name == r.Name {
 				delete(s.rules[p], r.Name)
 
 				logrus.WithFields(logrus.Fields{
-					"program": p,
-					"name":    r.Name,
+					"tracer": p,
+					"name":   r.Name,
 				}).Infof("Deleted rule")
 
 				continue
