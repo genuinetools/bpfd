@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/syndtr/gocapability/capability"
 	"golang.org/x/sys/unix"
@@ -450,4 +451,26 @@ func IsValidContainerRuntime(s string) bool {
 		}
 	}
 	return false
+}
+
+// HasNamespace determines if a container is using a particular namespace or the
+// host namespace.
+// The device number of an unnamespaced /proc/1/ns/{ns} is 4 and anything else is
+// higher.
+// Only works from inside a container.
+func HasNamespace(ns string) (bool, error) {
+	file := fmt.Sprintf("/proc/1/ns/%s", ns)
+
+	// Use Lstat to not follow the symlink.
+	var info syscall.Stat_t
+	if err := syscall.Lstat(file, &info); err != nil {
+		return false, &os.PathError{Op: "lstat", Path: file, Err: err}
+	}
+
+	// Get the device number. If it is higher than 4 it is in a namespace.
+	if info.Dev > 4 {
+		return true, nil
+	}
+
+	return false, nil
 }
