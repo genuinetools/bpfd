@@ -24,6 +24,7 @@ import (
 	_ "github.com/jessfraz/bpfd/tracer/bashreadline"
 	_ "github.com/jessfraz/bpfd/tracer/exec"
 	_ "github.com/jessfraz/bpfd/tracer/open"
+	_ "github.com/jessfraz/bpfd/tracer/tcpdrop"
 
 	// Register the builtin actions.
 	_ "github.com/jessfraz/bpfd/action/kill"
