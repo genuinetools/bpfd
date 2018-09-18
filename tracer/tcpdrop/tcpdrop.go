@@ -38,7 +38,8 @@ typedef struct {
 	u16 dport;
 	u8 state;
     u8 tcpflags;
-	u32 recvqueuelen;
+	u32 seq;
+	u16 len;
 } data_t;
 
 BPF_PERF_OUTPUT(events);
@@ -86,7 +87,7 @@ int trace_entry(struct pt_regs *ctx,
 	// pull in details from the packet headers and the sock struct
     u16 family = sk->__sk_common.skc_family;
     char state = sk->__sk_common.skc_state;
-    u16 sport = 0, dport = 0;
+    u16 sport = 0, dport = 0, len = 0;
     struct tcphdr *tcp = skb_to_tcphdr(skb);
     struct iphdr *ip = skb_to_iphdr(skb);
     u8 tcpflags = ((u_int8_t *)tcp)[13];
@@ -94,6 +95,7 @@ int trace_entry(struct pt_regs *ctx,
     dport = tcp->dest;
     sport = ntohs(sport);
     dport = ntohs(dport);
+	len = ip->tot_len;
 
 	data.saddr = ip->saddr;
     data.daddr = ip->daddr;
@@ -101,7 +103,8 @@ int trace_entry(struct pt_regs *ctx,
     data.sport = sport;
     data.state = state;
     data.tcpflags = tcpflags;
-	data.recvqueuelen = sk->sk_receive_queue.qlen;
+	data.seq = tcp->seq;
+	data.len = len;
 
 	tmp.update(&pid, &data);
 	return 0;
@@ -138,7 +141,8 @@ type tcpEvent struct {
 	DestinationPort    uint16
 	State              uint8
 	TCPFlags           uint8
-	RecvQueueLen       uint32
+	Seq                uint32
+	Len                uint16
 }
 
 func init() {
@@ -218,15 +222,16 @@ func (p *bpftracer) WatchEvent() (*grpc.Event, error) {
 		PID:  event.PID,
 		TGID: event.TGID,
 		Data: map[string]string{
-			"saddr":        inetNtoa(event.SourceAddress),
-			"daddr":        inetNtoa(event.DestinationAddress),
-			"sport":        fmt.Sprintf("%d", event.SourcePort),
-			"dport":        fmt.Sprintf("%d", event.DestinationPort),
-			"state":        state,
-			"tcpflags":     tcp.FlagsToString(event.TCPFlags),
-			"recvqueuelen": fmt.Sprintf("%d", event.RecvQueueLen),
-			"command":      command,
-			"returnval":    fmt.Sprintf("%d", event.ReturnValue),
+			"saddr":     inetNtoa(event.SourceAddress),
+			"daddr":     inetNtoa(event.DestinationAddress),
+			"sport":     fmt.Sprintf("%d", event.SourcePort),
+			"dport":     fmt.Sprintf("%d", event.DestinationPort),
+			"state":     state,
+			"tcpflags":  tcp.FlagsToString(event.TCPFlags),
+			"seq":       fmt.Sprintf("%d", event.Seq),
+			"len":       fmt.Sprintf("%d", event.Len),
+			"command":   command,
+			"returnval": fmt.Sprintf("%d", event.ReturnValue),
 		}}
 
 	return e, nil
