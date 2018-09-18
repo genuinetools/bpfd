@@ -18,61 +18,55 @@ const (
 #include <uapi/linux/ptrace.h>
 #include <uapi/linux/limits.h>
 #include <linux/sched.h>
-struct val_t {
+
+typedef struct {
     u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
-    u64 timestamp;
-    char comm[TASK_COMM_LEN];
-    const char *filename;
-};
-struct data_t {
-    u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
-    u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
-    u64 timestamp;
     int ret;
     char comm[TASK_COMM_LEN];
     char filename[NAME_MAX];
-};
+} data_t;
 
-BPF_HASH(infotmp, u64, struct val_t);
+BPF_HASH(tmp, u64, data_t);
 BPF_PERF_OUTPUT(events);
 
 int trace_entry(struct pt_regs *ctx, int dfd, const char __user *filename)
 {
-    struct val_t val = {};
-    struct task_struct *task;
 	u64 pid = bpf_get_current_pid_tgid();
-    val.pid = pid >> 32;
-    task = (struct task_struct *)bpf_get_current_task();
+
+	data_t data = {
+		.pid = pid >> 32,
+	};
+
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
     // as the real_parent->tgid.
     // We use the get_tgid function as a fallback in those cases. (#1883)
-    val.tgid = task->real_parent->tgid;
-    bpf_get_current_comm(&val.comm, sizeof(val.comm));
-    val.timestamp = bpf_ktime_get_ns();
-    val.filename = filename;
-    infotmp.update(&pid, &val);
+    struct task_struct *task;
+    task = (struct task_struct *)bpf_get_current_task();
+    data.tgid = task->real_parent->tgid;
+
+    bpf_get_current_comm(&data.comm, sizeof(data.comm));
+	bpf_probe_read(&data.filename, sizeof(data.filename), (void *)filename);
+
+    tmp.update(&pid, &data);
     return 0;
 };
 int trace_return(struct pt_regs *ctx)
 {
     u64 id = bpf_get_current_pid_tgid();
-    struct val_t *valp;
-    struct data_t data = {};
-    u64 time = bpf_ktime_get_ns();
-    valp = infotmp.lookup(&id);
-    if (valp == 0) {
+    data_t *datap = tmp.lookup(&id);
+
+    if (datap == 0) {
         // missed entry
         return 0;
     }
-    bpf_probe_read(&data.comm, sizeof(data.comm), valp->comm);
-    bpf_probe_read(&data.filename, sizeof(data.filename), (void *)valp->filename);
-    data.pid = valp->pid;
-    data.tgid = valp->tgid;
-    data.timestamp = time / 1000;
+
+	data_t data = *datap;
+
     data.ret = PT_REGS_RC(ctx);
     events.perf_submit(ctx, &data, sizeof(data));
-    infotmp.delete(&id);
+
+    tmp.delete(&id);
     return 0;
 }
 `
@@ -81,7 +75,6 @@ int trace_return(struct pt_regs *ctx)
 type openEvent struct {
 	PID         uint32
 	TGID        uint32
-	Timestamp   uint64
 	ReturnValue int32
 	Comm        [16]byte
 	Filename    [255]byte
