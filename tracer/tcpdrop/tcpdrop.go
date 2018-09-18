@@ -1,3 +1,8 @@
+// Package tcpdrop implements a tracer to detect CVE-2018-5390.
+// See CVE:
+// 	https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-5390
+// Patch for the bug:
+// 	https://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git/commit/?id=1a4f14bab1868b443f0dd3c55b689a478f82e72e
 package tcpdrop
 
 import (
@@ -33,6 +38,7 @@ typedef struct {
 	u16 dport;
 	u8 state;
     u8 tcpflags;
+	u32 recvqueuelen;
 } data_t;
 
 BPF_PERF_OUTPUT(events);
@@ -95,6 +101,7 @@ int trace_entry(struct pt_regs *ctx,
     data.sport = sport;
     data.state = state;
     data.tcpflags = tcpflags;
+	data.recvqueuelen = sk->sk_receive_queue.qlen;
 
 	tmp.update(&pid, &data);
 	return 0;
@@ -131,6 +138,7 @@ type tcpEvent struct {
 	DestinationPort    uint16
 	State              uint8
 	TCPFlags           uint8
+	RecvQueueLen       uint32
 }
 
 func init() {
@@ -210,14 +218,15 @@ func (p *bpftracer) WatchEvent() (*grpc.Event, error) {
 		PID:  event.PID,
 		TGID: event.TGID,
 		Data: map[string]string{
-			"saddr":     inetNtoa(event.SourceAddress),
-			"daddr":     inetNtoa(event.DestinationAddress),
-			"sport":     fmt.Sprintf("%d", event.SourcePort),
-			"dport":     fmt.Sprintf("%d", event.DestinationPort),
-			"state":     state,
-			"tcpflags":  tcp.FlagsToString(event.TCPFlags),
-			"command":   command,
-			"returnval": fmt.Sprintf("%d", event.ReturnValue),
+			"saddr":        inetNtoa(event.SourceAddress),
+			"daddr":        inetNtoa(event.DestinationAddress),
+			"sport":        fmt.Sprintf("%d", event.SourcePort),
+			"dport":        fmt.Sprintf("%d", event.DestinationPort),
+			"state":        state,
+			"tcpflags":     tcp.FlagsToString(event.TCPFlags),
+			"recvqueuelen": fmt.Sprintf("%d", event.RecvQueueLen),
+			"command":      command,
+			"returnval":    fmt.Sprintf("%d", event.ReturnValue),
 		}}
 
 	return e, nil
