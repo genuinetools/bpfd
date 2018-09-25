@@ -1,8 +1,8 @@
 # bpfd
 
-[![Travis CI](https://img.shields.io/travis/jessfraz/bpfd.svg?style=for-the-badge)](https://travis-ci.org/jessfraz/bpfd)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://godoc.org/github.com/jessfraz/bpfd)
-[![Github All Releases](https://img.shields.io/github/downloads/jessfraz/bpfd/total.svg?style=for-the-badge)](https://github.com/jessfraz/bpfd/releases)
+[![Travis CI](https://img.shields.io/travis/genuinetools/bpfd.svg?style=for-the-badge)](https://travis-ci.org/genuinetools/bpfd)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://godoc.org/github.com/genuinetools/bpfd)
+[![Github All Releases](https://img.shields.io/github/downloads/genuinetools/bpfd/total.svg?style=for-the-badge)](https://github.com/genuinetools/bpfd/releases)
 
 Framework for running BPF tracers with rules on Linux as a daemon. Container aware.
 
@@ -104,7 +104,7 @@ data struct.
 
 You can also filter based off the container runtime you would like to alert on.
 The container runtime must be one of the strings defined
-[here](https://github.com/jessfraz/bpfd/blob/master/proc/proc.go#L24).
+[here](https://github.com/genuinetools/bpfd/blob/master/proc/proc.go#L24).
 
 If you provide no rules for a tracer, then _all_ the events will be passed to
 actions.
@@ -126,13 +126,13 @@ containerRuntimes = ["docker","kube"]
 ```
 
 If you are wondering where the `command` key comes from, it's defined in the
-`exec` tracer [here](https://github.com/jessfraz/bpfd/blob/master/tracer/exec/exec.go#L200).
+`exec` tracer [here](https://github.com/genuinetools/bpfd/blob/master/tracer/exec/exec.go#L200).
 
 Rules can be dynamically controlled via bpfd's [gRPC](https://grpc.io/) interface.
 The cli tool can also be used for creating rules dynamically, see 
 [`create` usage](#create-rules-dynamically).
 
-The protobuf protocol definition is defined in [api/grpc/api.proto](https://github.com/jessfraz/bpfd/blob/master/api/grpc/api.proto)
+The protobuf protocol definition is defined in [api/grpc/api.proto](https://github.com/genuinetools/bpfd/blob/master/api/grpc/api.proto)
 
 To interact with the gRPC api you can use the [`--gpc-addr` flag](#usage)
 or the default is a sock at `/run/bpfd/bpfd.sock`.
@@ -168,12 +168,12 @@ To build, you need to have `libbcc` installed [SEE INSTRUCTIONS HERE](https://gi
 
 #### Binaries
 
-For installation instructions from binaries please visit the [Releases Page](https://github.com/jessfraz/bpfd/releases).
+For installation instructions from binaries please visit the [Releases Page](https://github.com/genuinetools/bpfd/releases).
 
 #### Via Go
 
 ```console
-$ go get github.com/jessfraz/bpfd
+$ go get github.com/genuinetools/bpfd
 ```
 
 #### Via Docker

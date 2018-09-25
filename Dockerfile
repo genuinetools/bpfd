@@ -7,7 +7,7 @@ ENV GOPATH /go
 RUN	apk add --no-cache \
 	ca-certificates
 
-COPY . /go/src/github.com/jessfraz/bpfd
+COPY . /go/src/github.com/genuinetools/bpfd
 
 RUN set -x \
 	&& apk add --no-cache --virtual .build-deps \
@@ -16,7 +16,7 @@ RUN set -x \
 		libc-dev \
 		libgcc \
 		make \
-	&& cd /go/src/github.com/jessfraz/bpfd \
+	&& cd /go/src/github.com/genuinetools/bpfd \
 	&& make static \
 	&& mv bpfd /usr/bin/bpfd \
 	&& apk del .build-deps \

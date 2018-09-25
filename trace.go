@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/jessfraz/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/api/grpc"
 	"github.com/sirupsen/logrus"
 )
 

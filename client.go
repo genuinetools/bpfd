@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	types "github.com/jessfraz/bpfd/api/grpc"
+	types "github.com/genuinetools/bpfd/api/grpc"
 	"google.golang.org/grpc"
 )
 

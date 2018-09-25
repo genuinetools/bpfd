@@ -31,7 +31,7 @@ RUN go get honnef.co/go/tools/cmd/staticcheck
 RUN go get github.com/golang/protobuf/proto
 RUN go get github.com/golang/protobuf/protoc-gen-go
 
-COPY . /go/src/github.com/jessfraz/bpfd
+COPY . /go/src/github.com/genuinetools/bpfd
 
-WORKDIR /go/src/github.com/jessfraz/bpfd
+WORKDIR /go/src/github.com/genuinetools/bpfd
 ENTRYPOINT ["sh", "-c"]

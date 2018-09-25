@@ -1,6 +1,6 @@
 # Setup name variables for the package/tool
 NAME := bpfd
-PKG := github.com/jessfraz/$(NAME)
+PKG := github.com/genuinetools/$(NAME)
 
 CGO_ENABLED := 1
 

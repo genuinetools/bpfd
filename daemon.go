@@ -12,23 +12,23 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/jessfraz/bpfd/action"
-	"github.com/jessfraz/bpfd/api"
-	types "github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/rules"
-	"github.com/jessfraz/bpfd/tracer"
+	"github.com/genuinetools/bpfd/action"
+	"github.com/genuinetools/bpfd/api"
+	types "github.com/genuinetools/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/rules"
+	"github.com/genuinetools/bpfd/tracer"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	// Register the builtin tracers.
-	_ "github.com/jessfraz/bpfd/tracer/bashreadline"
-	_ "github.com/jessfraz/bpfd/tracer/exec"
-	_ "github.com/jessfraz/bpfd/tracer/open"
-	_ "github.com/jessfraz/bpfd/tracer/tcpdrop"
+	_ "github.com/genuinetools/bpfd/tracer/bashreadline"
+	_ "github.com/genuinetools/bpfd/tracer/exec"
+	_ "github.com/genuinetools/bpfd/tracer/open"
+	_ "github.com/genuinetools/bpfd/tracer/tcpdrop"
 
 	// Register the builtin actions.
-	_ "github.com/jessfraz/bpfd/action/kill"
-	_ "github.com/jessfraz/bpfd/action/stdout"
+	_ "github.com/genuinetools/bpfd/action/kill"
+	_ "github.com/genuinetools/bpfd/action/stdout"
 )
 
 const daemonHelp = `Start the daemon.`

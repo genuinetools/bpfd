@@ -11,10 +11,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/genuinetools/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/tcp"
+	"github.com/genuinetools/bpfd/tracer"
 	bpf "github.com/iovisor/gobpf/bcc"
-	"github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/tcp"
-	"github.com/jessfraz/bpfd/tracer"
 )
 
 const (

@@ -3,8 +3,8 @@ package stdout
 import (
 	"fmt"
 
-	"github.com/jessfraz/bpfd/action"
-	"github.com/jessfraz/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/action"
+	"github.com/genuinetools/bpfd/api/grpc"
 	"github.com/sirupsen/logrus"
 )
 

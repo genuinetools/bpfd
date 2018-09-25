@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/proc"
+	"github.com/genuinetools/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/proc"
 )
 
 // ParseFiles parses the rules files and returns an array of rules for each tracer.

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/rules"
+	"github.com/genuinetools/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/rules"
 	"github.com/sirupsen/logrus"
 )
 

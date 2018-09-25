@@ -5,8 +5,8 @@ import (
 	"errors"
 	"flag"
 
+	"github.com/genuinetools/bpfd/version"
 	"github.com/genuinetools/pkg/cli"
-	"github.com/jessfraz/ship/version"
 	"github.com/sirupsen/logrus"
 )
 

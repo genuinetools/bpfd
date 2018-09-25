@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/jessfraz/bpfd/action"
-	"github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/proc"
-	rulespkg "github.com/jessfraz/bpfd/rules"
-	"github.com/jessfraz/bpfd/tracer"
+	"github.com/genuinetools/bpfd/action"
+	"github.com/genuinetools/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/proc"
+	rulespkg "github.com/genuinetools/bpfd/rules"
+	"github.com/genuinetools/bpfd/tracer"
 	"github.com/sirupsen/logrus"
 )
 

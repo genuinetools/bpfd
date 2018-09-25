@@ -3,8 +3,8 @@ package rules
 import (
 	"testing"
 
-	"github.com/jessfraz/bpfd/api/grpc"
-	"github.com/jessfraz/bpfd/proc"
+	"github.com/genuinetools/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/proc"
 )
 
 func TestMatch(t *testing.T) {

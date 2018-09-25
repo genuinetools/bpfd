@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/jessfraz/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/api/grpc"
 )
 
 // addEvent will add a event to the heap.

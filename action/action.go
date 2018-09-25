@@ -3,7 +3,7 @@ package action
 import (
 	"fmt"
 
-	"github.com/jessfraz/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/api/grpc"
 )
 
 var (

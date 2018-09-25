@@ -7,7 +7,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/jessfraz/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/api/grpc"
 )
 
 const listHelp = `List rules.`
