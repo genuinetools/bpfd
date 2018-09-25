@@ -33,22 +33,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:23140ef7a714d4f63d5fd9d85cbdff70d68b86418dd7333e852b1927e70633a8"
+  digest = "1:3f911049ff85f434ca338d2f9650c59de859fb66b2485b84f8e0fccc15450241"
   name = "github.com/iovisor/gobpf"
   packages = [
     "bcc",
     "pkg/cpuonline",
   ]
   pruneopts = "NUT"
-  revision = "4ece6c56f93637c86338885d37e98ff0fb97b4c9"
-
-[[projects]]
-  digest = "1:d15180343f618d58b83aa74baee173db241e43468d05cab897aaec6fbe007407"
-  name = "github.com/jessfraz/ship"
-  packages = ["version"]
-  pruneopts = "NUT"
-  revision = "c371a49613899b456490b3bcd718944798dbd156"
-  version = "v0.0.5"
+  revision = "2e314be67b1854ad226f012f08a984e0e89b6da9"
 
 [[projects]]
   digest = "1:b2339e83ce9b5c4f79405f949429a7f68a9a904fed903c672aac1e7ceb7f5f02"
@@ -60,11 +52,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e865a1cd94806d1bb0eaa0bffba2ccb5e25ac42e1f55328c83d5e3399c9961a4"
+  digest = "1:e14e467ed00ab98665623c5060fa17e3d7079be560ffc33cabafd05d35894f05"
   name = "github.com/syndtr/gocapability"
   packages = ["capability"]
   pruneopts = "NUT"
-  revision = "33e07d32887e1e06b7c025f27ce52f62c7990bc0"
+  revision = "d98352740cb2c55f81556b63d4a1ec64c5a319c2"
 
 [[projects]]
   branch = "master"
@@ -88,18 +80,18 @@
     "trace",
   ]
   pruneopts = "NUT"
-  revision = "161cd47e91fd58ac17490ef4d742dc98bb4cf60e"
+  revision = "f04abc6bdfa7a0171a8a0c9fd2ada9391044d056"
 
 [[projects]]
   branch = "master"
-  digest = "1:581828cee9f0d31195c1ae52ea8935dfaec395cee6c23adc02109b892b391c2e"
+  digest = "1:16c7423676f53021ecdec1e73a3c69f50e11c5b4988388940e7cb1634276755d"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "NUT"
-  revision = "d0be0721c37eeb5299f245a996a483160fc36940"
+  revision = "b09afc3d579e346c4a7e4705953acaf6f9e551bd"
 
 [[projects]]
   digest = "1:e7071ed636b5422cc51c0e3a6cebc229d6c9fffc528814b519a980641422d619"
@@ -126,14 +118,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:077c1c599507b3b3e9156d17d36e1e61928ee9b53a5b420f10f28ebd4a0b275c"
+  digest = "1:56b0bca90b7e5d1facf5fbdacba23e4e0ce069d25381b8e2f70ef1e7ebfb9c1a"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "NUT"
-  revision = "11092d34479b07829b72e10713b159248caf5dad"
+  revision = "221a8d4f74948678f06caaa13c9d41d22e069ae8"
 
 [[projects]]
-  digest = "1:c2d756dba3cf0bc2d50ff9b3e4b80cd327436cf678386a51c8417d084625a51d"
+  digest = "1:5b805b8e03b29399b344655cac16873f026e54dc0a7c17b381f6f4d4c7b6d741"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -164,8 +156,8 @@
     "tap",
   ]
   pruneopts = "NUT"
-  revision = "32fb0ac620c32ba40a4626ddf94d90d12cce3455"
-  version = "v1.14.0"
+  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
+  version = "v1.15.0"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -175,7 +167,6 @@
     "github.com/genuinetools/pkg/cli",
     "github.com/golang/protobuf/proto",
     "github.com/iovisor/gobpf/bcc",
-    "github.com/jessfraz/ship/version",
     "github.com/sirupsen/logrus",
     "github.com/syndtr/gocapability/capability",
     "golang.org/x/net/context",
