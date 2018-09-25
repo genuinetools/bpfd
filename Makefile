@@ -12,10 +12,6 @@ include basic.mk
 .PHONY: prebuild
 prebuild:
 
-.PHONY: image-dev
-image-dev:
-	docker build --rm --force-rm -f Dockerfile.dev -t $(REGISTRY)/$(NAME):dev .
-
 DOCKER_FLAGS+=--rm -i \
 	--disable-content-trust=true
 DOCKER_FLAGS+=-v $(CURDIR):/go/src/$(PKG)
