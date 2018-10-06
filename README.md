@@ -148,6 +148,7 @@ The current compiled in actions are:
 
 - [stdout](action/stdout): print to stdout
 - [kill](action/kill): kill the process
+- [interrupt](action/interrupt): interrupt the process
 
 Actions implement the `Actions` interface:
 
