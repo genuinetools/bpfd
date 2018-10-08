@@ -27,6 +27,7 @@ import (
 	_ "github.com/genuinetools/bpfd/tracer/tcpdrop"
 
 	// Register the builtin actions.
+	_ "github.com/genuinetools/bpfd/action/interrupt"
 	_ "github.com/genuinetools/bpfd/action/kill"
 	_ "github.com/genuinetools/bpfd/action/stdout"
 )
