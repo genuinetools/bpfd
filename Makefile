@@ -29,8 +29,9 @@ GRPC_API_DIR=api/grpc
 protoc: $(CURDIR)/$(GRPC_API_DIR)/api.pb.go ## Generate the protobuf files.
 
 $(CURDIR)/$(GRPC_API_DIR)/api.pb.go: image-dev $(CURDIR)/$(GRPC_API_DIR)/api.proto
-	@docker run $(DOCKER_FLAGS) \
+	docker run $(DOCKER_FLAGS) \
+		--entrypoint protoc \
 		$(REGISTRY)/$(NAME):dev \
-		protoc -I ./$(GRPC_API_DIR) \
+	 	-I./$(GRPC_API_DIR) \
 		./$(GRPC_API_DIR)/api.proto \
 		--go_out=plugins=grpc:$(GRPC_API_DIR)

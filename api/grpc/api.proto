@@ -47,10 +47,12 @@ message ListRulesResponse {
 message Event {
   uint32 PID = 1;
   uint32 TGID = 2;
-  map<string, string> data = 3;
-  string containerID = 4; // Filled in after the tracer is run so you don't need to.
-  string containerRuntime = 5; // Filled in after the tracer is run so you don't need to.
-  string tracer = 6; // Filled in after the tracer is run so you don't need to.
+  uint32 UID = 3;
+  uint32 GID = 4;
+  map<string, string> data = 5;
+  string containerID = 6; // Filled in after the tracer is run so you don't need to.
+  string containerRuntime = 7; // Filled in after the tracer is run so you don't need to.
+  string tracer = 8; // Filled in after the tracer is run so you don't need to.
 }
 
 message LiveTraceRequest {

@@ -31,6 +31,8 @@ const (
 typedef struct {
     u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
+	u32 uid;
+	u32 gid;
     int ret;
     char comm[TASK_COMM_LEN];
 	u32 saddr;
@@ -71,9 +73,12 @@ int trace_entry(struct pt_regs *ctx,
 	struct sk_buff *skb)
 {
 	u64 pid = bpf_get_current_pid_tgid();
+	u64 uid = bpf_get_current_uid_gid();
 
 	data_t data = {
 		.pid = pid >> 32,
+		.uid = uid & 0xffffffff,
+		.gid = uid >> 32,
 	};
 
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
@@ -134,6 +139,8 @@ int trace_return(struct pt_regs *ctx)
 type tcpEvent struct {
 	PID                uint32
 	TGID               uint32
+	UID                uint32
+	GID                uint32
 	ReturnValue        int32
 	Comm               [16]byte
 	SourceAddress      uint32
@@ -222,6 +229,8 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	e := &grpc.Event{
 		PID:  event.PID,
 		TGID: event.TGID,
+		UID:  event.UID,
+		GID:  event.GID,
 		Data: map[string]string{
 			"saddr":     inetNtoa(event.SourceAddress),
 			"daddr":     inetNtoa(event.DestinationAddress),

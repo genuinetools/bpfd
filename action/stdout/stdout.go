@@ -32,6 +32,8 @@ func (s *stdoutAction) Do(event *grpc.Event) error {
 		"tracer":            event.Tracer,
 		"pid":               fmt.Sprintf("%d", event.PID),
 		"tgid":              fmt.Sprintf("%d", event.TGID),
+		"uid":               fmt.Sprintf("%d", event.UID),
+		"gid":               fmt.Sprintf("%d", event.GID),
 		"container_runtime": string(event.ContainerRuntime),
 		"container_id":      event.ContainerID,
 	}).Infof("%#v", event.Data)

@@ -26,6 +26,8 @@ const (
 typedef struct {
     u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
+	u32 uid;
+	u32 gid;
     int ret;
     char comm[TASK_COMM_LEN];
     char filename[NAME_MAX];
@@ -37,9 +39,12 @@ BPF_PERF_OUTPUT(events);
 int trace_entry(struct pt_regs *ctx, int dfd, const char __user *filename)
 {
 	u64 pid = bpf_get_current_pid_tgid();
+	u64 uid = bpf_get_current_uid_gid();
 
 	data_t data = {
 		.pid = pid >> 32,
+		.uid = uid & 0xffffffff,
+		.gid = uid >> 32,
 	};
 
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
@@ -79,6 +84,8 @@ int trace_return(struct pt_regs *ctx)
 type openEvent struct {
 	PID         uint32
 	TGID        uint32
+	UID         uint32
+	GID         uint32
 	ReturnValue int32
 	Comm        [16]byte
 	Filename    [255]byte
@@ -176,6 +183,8 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	e := &grpc.Event{
 		PID:  event.PID,
 		TGID: event.TGID,
+		UID:  event.UID,
+		GID:  event.GID,
 		Data: map[string]string{
 			"filename":  filename,
 			"command":   command,
@@ -190,6 +199,9 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 
 	// Get the container ID.
 	e.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
+	if len(e.ContainerID) < 1 {
+		return nil, nil
+	}
 
 	// Get information for the container mounts.
 	r, err := p.dockerClient.ContainerInspect(ctx, e.ContainerID)
@@ -198,23 +210,23 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	}
 	// Collect all the mount information from the graph driver and actual mounts.
 	mounts := []string{}
-	switch r.GraphDriver.Name {
-	case "overlay":
-		// Data looks like:
-		// "Data": {
-		//        "LowerDir": "/var/lib/docker/overlay/7efc3ec24e158ef58ce4103b079b8dda6b6fbccf005e1f08dc63817a70340b0b/root",
-		//        "MergedDir": "/var/lib/docker/overlay/3606c689c896a921d4e076fd02a6743327767b1b3639ebc2bc8b6932536aa2c9/merged",
-		//        "UpperDir": "/var/lib/docker/overlay/3606c689c896a921d4e076fd02a6743327767b1b3639ebc2bc8b6932536aa2c9/upper",
-		//        "WorkDir": "/var/lib/docker/overlay/3606c689c896a921d4e076fd02a6743327767b1b3639ebc2bc8b6932536aa2c9/work"
-		//    },
-		// So iterate over it and add it to our mounts.
-		for _, v := range r.GraphDriver.Data {
-			mounts = append(mounts, v)
-		}
-	default:
-		return nil, fmt.Errorf("%s is an unsupported graphdriver for this tracer", r.GraphDriver.Name)
+	// Data looks like:
+	// "Data": {
+	//        "LowerDir": "/var/lib/docker/overlay/7efc3ec24e158ef58ce4103b079b8dda6b6fbccf005e1f08dc63817a70340b0b/root",
+	//        "MergedDir": "/var/lib/docker/overlay/3606c689c896a921d4e076fd02a6743327767b1b3639ebc2bc8b6932536aa2c9/merged",
+	//        "UpperDir": "/var/lib/docker/overlay/3606c689c896a921d4e076fd02a6743327767b1b3639ebc2bc8b6932536aa2c9/upper",
+	//        "WorkDir": "/var/lib/docker/overlay/3606c689c896a921d4e076fd02a6743327767b1b3639ebc2bc8b6932536aa2c9/work"
+	//    },
+	// So iterate over it and add it to our mounts.
+	for _, v := range r.GraphDriver.Data {
+		mounts = append(mounts, v)
 	}
-	logrus.Infof("mounts: %v", mounts)
+
+	if hasPrefix(filename, mounts) {
+		// The file is within the mount context of the container so return nil.
+		logrus.Warnf("%s is in mounts: %#v", filename, mounts)
+		return nil, nil
+	}
 
 	return e, nil
 }
@@ -230,4 +242,14 @@ func (p *bpftracer) Unload() {
 	if p.module != nil {
 		p.module.Close()
 	}
+}
+
+func hasPrefix(str string, ss []string) bool {
+	for _, s := range ss {
+		if strings.HasPrefix(str, s) {
+			return true
+		}
+	}
+
+	return false
 }

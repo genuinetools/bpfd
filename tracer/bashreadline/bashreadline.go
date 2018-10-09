@@ -19,30 +19,39 @@ const (
 #include <uapi/linux/ptrace.h>
 #include <linux/sched.h>
 
-struct readline_event_t {
-        u32 pid;
-        u32 tgid;
-        char comm[80];
-} __attribute__((packed));
-BPF_PERF_OUTPUT(readline_events);
+typedef struct {
+	u32 pid;
+	u32 tgid;
+	u32 uid;
+	u32 gid;
+	char comm[80];
+} data_t;
+
+BPF_PERF_OUTPUT(events);
+
 int get_return_value(struct pt_regs *ctx) {
-        struct readline_event_t event = {};
-		struct task_struct *task;
+	if (!PT_REGS_RC(ctx))
+		return 0;
 
-        if (!PT_REGS_RC(ctx))
-                return 0;
+	u64 pid = bpf_get_current_pid_tgid();
+	u64 uid = bpf_get_current_uid_gid();
 
-		event.pid = bpf_get_current_pid_tgid() & 0xffffffff;
-		task = (struct task_struct *)bpf_get_current_task();
+	data_t data = {
+		.pid = pid >> 32,
+		.uid = uid & 0xffffffff,
+		.gid = uid >> 32,
+	};
 
-		// Some kernels, like Ubuntu 4.13.0-generic, return 0
-		// as the real_parent->tgid.
-		// We use the get_ppid function as a fallback in those cases. (#1883)
-		event.tgid = task->real_parent->tgid;
+    // Some kernels, like Ubuntu 4.13.0-generic, return 0
+    // as the real_parent->tgid.
+    // We use the get_tgid function as a fallback in those cases. (#1883)
+    struct task_struct *task;
+    task = (struct task_struct *)bpf_get_current_task();
+    data.tgid = task->real_parent->tgid;
 
-        bpf_probe_read(&event.comm, sizeof(event.comm), (void *)PT_REGS_RC(ctx));
-        readline_events.perf_submit(ctx, &event, sizeof(event));
-        return 0;
+    bpf_get_current_comm(&data.comm, sizeof(data.comm));
+    events.perf_submit(ctx, &data, sizeof(data));
+    return 0;
 }
 `
 )
@@ -50,6 +59,8 @@ int get_return_value(struct pt_regs *ctx) {
 type readlineEvent struct {
 	PID  uint32
 	TGID uint32
+	UID  uint32
+	GID  uint32
 	Comm [80]byte
 }
 
@@ -87,7 +98,7 @@ func (p *bpftracer) Load() error {
 		return fmt.Errorf("attach return_value ureturnprobe: %v", err)
 	}
 
-	table := bpf.NewTable(p.module.TableId("readline_events"), p.module)
+	table := bpf.NewTable(p.module.TableId("events"), p.module)
 
 	p.perfMap, err = bpf.InitPerfMap(table, p.channel)
 	if err != nil {
@@ -111,6 +122,8 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	e := &grpc.Event{
 		PID:  event.PID,
 		TGID: event.TGID,
+		UID:  event.UID,
+		GID:  event.GID,
 		Data: map[string]string{
 			"command": command,
 		}}

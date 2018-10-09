@@ -25,14 +25,16 @@ enum event_type {
     EVENT_ARG,
     EVENT_RET,
 };
-struct data_t {
+typedef struct {
     u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
+	u32 uid;
+	u32 gid;
     char comm[TASK_COMM_LEN];
     enum event_type type;
     char argv[ARGSIZE];
     int retval;
-};
+} data_t;
 BPF_PERF_OUTPUT(events);
 static int __submit_arg(struct pt_regs *ctx, void *ptr, struct data_t *data)
 {
@@ -54,16 +56,24 @@ int syscall__execve(struct pt_regs *ctx,
     const char __user *const __user *__argv,
     const char __user *const __user *__envp)
 {
-    // create data here and pass to submit_arg to save stack space (#555)
-    struct data_t data = {};
-    struct task_struct *task;
-    data.pid = bpf_get_current_pid_tgid() >> 32;
-    task = (struct task_struct *)bpf_get_current_task();
+	u64 pid = bpf_get_current_pid_tgid();
+	u64 uid = bpf_get_current_uid_gid();
+
+	data_t data = {
+		.pid = pid >> 32,
+		.uid = uid & 0xffffffff,
+		.gid = uid >> 32,
+	};
+
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
     // as the real_parent->tgid.
     // We use the get_tgid function as a fallback in those cases. (#1883)
+    struct task_struct *task;
+    task = (struct task_struct *)bpf_get_current_task();
     data.tgid = task->real_parent->tgid;
+
     bpf_get_current_comm(&data.comm, sizeof(data.comm));
+
     data.type = EVENT_ARG;
     __submit_arg(ctx, (void *)filename, &data);
     // skip first arg, as we submitted filename
@@ -78,18 +88,29 @@ int syscall__execve(struct pt_regs *ctx,
 out:
     return 0;
 }
+
 int do_ret_sys_execve(struct pt_regs *ctx)
 {
-    struct data_t data = {};
-    struct task_struct *task;
-    data.pid = bpf_get_current_pid_tgid() >> 32;
-    task = (struct task_struct *)bpf_get_current_task();
+	u64 pid = bpf_get_current_pid_tgid();
+	u64 uid = bpf_get_current_uid_gid();
+
+	data_t data = {
+		.pid = pid >> 32,
+		.uid = uid & 0xffffffff,
+		.gid = uid >> 32,
+	};
+
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
     // as the real_parent->tgid.
     // We use the get_tgid function as a fallback in those cases. (#1883)
+    struct task_struct *task;
+    task = (struct task_struct *)bpf_get_current_task();
     data.tgid = task->real_parent->tgid;
+
     bpf_get_current_comm(&data.comm, sizeof(data.comm));
+
     data.type = EVENT_RET;
+
     data.retval = PT_REGS_RC(ctx);
     events.perf_submit(ctx, &data, sizeof(data));
     return 0;
@@ -100,6 +121,8 @@ int do_ret_sys_execve(struct pt_regs *ctx)
 type execEvent struct {
 	PID         uint32
 	TGID        uint32
+	UID         uint32
+	GID         uint32
 	Comm        [16]byte
 	Type        int32
 	Argv        [128]byte

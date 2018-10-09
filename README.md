@@ -91,6 +91,8 @@ be returned for the data. The rules then filter using those key value pairs.
 type Event struct {
     PID              uint32            // Process ID.
     TGID             uint32            // Task group ID.
+    UID              uint32            // User ID.
+    GID              uint32            // User group ID.
     Data             map[string]string
     ContainerRuntime string            // Filled in after the tracer is run so you don't need to.
     ContainerID      string            // Filled in after the tracer is run so you don't need to.
