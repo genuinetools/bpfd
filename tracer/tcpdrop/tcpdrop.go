@@ -227,21 +227,21 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	}
 
 	e := &grpc.Event{
-		PID:  event.PID,
-		TGID: event.TGID,
-		UID:  event.UID,
-		GID:  event.GID,
+		PID:         event.PID,
+		TGID:        event.TGID,
+		UID:         event.UID,
+		GID:         event.GID,
+		Command:     command,
+		ReturnValue: event.ReturnValue,
 		Data: map[string]string{
-			"saddr":     inetNtoa(event.SourceAddress),
-			"daddr":     inetNtoa(event.DestinationAddress),
-			"sport":     fmt.Sprintf("%d", event.SourcePort),
-			"dport":     fmt.Sprintf("%d", event.DestinationPort),
-			"state":     state,
-			"tcpflags":  tcp.FlagsToString(event.TCPFlags),
-			"seq":       fmt.Sprintf("%d", event.Seq),
-			"len":       fmt.Sprintf("%d", event.Len),
-			"command":   command,
-			"returnval": fmt.Sprintf("%d", event.ReturnValue),
+			"saddr":    inetNtoa(event.SourceAddress),
+			"daddr":    inetNtoa(event.DestinationAddress),
+			"sport":    fmt.Sprintf("%d", event.SourcePort),
+			"dport":    fmt.Sprintf("%d", event.DestinationPort),
+			"state":    state,
+			"tcpflags": tcp.FlagsToString(event.TCPFlags),
+			"seq":      fmt.Sprintf("%d", event.Seq),
+			"len":      fmt.Sprintf("%d", event.Len),
 		}}
 
 	return e, nil

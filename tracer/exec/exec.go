@@ -218,14 +218,14 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
 	e := &grpc.Event{
-		PID:  event.PID,
-		TGID: event.TGID,
-		UID:  event.UID,
+		PID:         event.PID,
+		TGID:        event.TGID,
+		UID:         event.UID,
+		Command:     command,
+		ReturnValue: event.ReturnValue,
 		Data: map[string]string{
-			"argv":      strings.Join(p.argv[event.PID], " "),
-			"command":   command,
-			"returnval": fmt.Sprintf("%d", event.ReturnValue),
-			"type":      fmt.Sprintf("%d", event.Type),
+			"argv": strings.Join(p.argv[event.PID], " "),
+			"type": fmt.Sprintf("%d", event.Type),
 		}}
 
 	// Delete from the array of argv.

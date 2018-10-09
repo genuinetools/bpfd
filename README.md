@@ -93,6 +93,8 @@ type Event struct {
     TGID             uint32            // Task group ID.
     UID              uint32            // User ID.
     GID              uint32            // User group ID.
+    Command          string            // The command for the process.
+    ReturnValue      int32             // The return value for the function.
     Data             map[string]string
     ContainerRuntime string            // Filled in after the tracer is run so you don't need to.
     ContainerID      string            // Filled in after the tracer is run so you don't need to.

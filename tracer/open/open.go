@@ -163,12 +163,12 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	}
 
 	e := &grpc.Event{
-		PID:  event.PID,
-		TGID: event.TGID,
+		PID:         event.PID,
+		TGID:        event.TGID,
+		Command:     command,
+		ReturnValue: event.ReturnValue,
 		Data: map[string]string{
-			"filename":  filename,
-			"command":   command,
-			"returnval": fmt.Sprintf("%d", event.ReturnValue),
+			"filename": filename,
 		}}
 
 	return e, nil

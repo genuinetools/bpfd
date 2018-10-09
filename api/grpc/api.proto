@@ -49,12 +49,12 @@ message Event {
   uint32 TGID = 2;
   uint32 UID = 3;
   uint32 GID = 4;
+  string command = 10;
+  int32 returnValue = 9;
   map<string, string> data = 5;
   string containerID = 6; // Filled in after the tracer is run so you don't need to.
   string containerRuntime = 7; // Filled in after the tracer is run so you don't need to.
   string tracer = 8; // Filled in after the tracer is run so you don't need to.
-  uint64 returnValue = 9;
-  string command = 10;
 }
 
 message LiveTraceRequest {

@@ -120,13 +120,12 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
 	e := &grpc.Event{
-		PID:  event.PID,
-		TGID: event.TGID,
-		UID:  event.UID,
-		GID:  event.GID,
-		Data: map[string]string{
-			"command": command,
-		}}
+		PID:     event.PID,
+		TGID:    event.TGID,
+		UID:     event.UID,
+		GID:     event.GID,
+		Command: command,
+	}
 
 	return e, nil
 }
