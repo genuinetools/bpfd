@@ -12,6 +12,7 @@ import (
 	"github.com/genuinetools/bpfd/proc"
 	"github.com/genuinetools/bpfd/tracer"
 	bpf "github.com/iovisor/gobpf/bcc"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -213,6 +214,7 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	default:
 		return nil, fmt.Errorf("%s is an unsupported graphdriver for this tracer", r.GraphDriver.Name)
 	}
+	logrus.Infof("mounts: %v", mounts)
 
 	return e, nil
 }

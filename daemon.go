@@ -22,6 +22,7 @@ import (
 
 	// Register the builtin tracers.
 	_ "github.com/genuinetools/bpfd/tracer/bashreadline"
+	_ "github.com/genuinetools/bpfd/tracer/dockeropenbreakout"
 	_ "github.com/genuinetools/bpfd/tracer/exec"
 	_ "github.com/genuinetools/bpfd/tracer/open"
 	_ "github.com/genuinetools/bpfd/tracer/tcpdrop"
