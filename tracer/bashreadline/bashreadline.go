@@ -25,13 +25,15 @@ typedef struct {
 	u32 uid;
 	u32 gid;
 	char comm[80];
+	int ret;
 } data_t;
 
 BPF_PERF_OUTPUT(events);
 
 int get_return_value(struct pt_regs *ctx) {
-	if (!PT_REGS_RC(ctx))
+	if (!PT_REGS_RC(ctx)){
 		return 0;
+	}
 
 	u64 pid = bpf_get_current_pid_tgid();
 	u64 uid = bpf_get_current_uid_gid();
@@ -49,7 +51,8 @@ int get_return_value(struct pt_regs *ctx) {
     task = (struct task_struct *)bpf_get_current_task();
     data.tgid = task->real_parent->tgid;
 
-    bpf_get_current_comm(&data.comm, sizeof(data.comm));
+    bpf_probe_read(&data.comm, sizeof(data.comm), (void *)PT_REGS_RC(ctx));
+
     events.perf_submit(ctx, &data, sizeof(data));
     return 0;
 }
@@ -57,11 +60,12 @@ int get_return_value(struct pt_regs *ctx) {
 )
 
 type readlineEvent struct {
-	PID  uint32
-	TGID uint32
-	UID  uint32
-	GID  uint32
-	Comm [80]byte
+	PID         uint32
+	TGID        uint32
+	UID         uint32
+	GID         uint32
+	Comm        [80]byte
+	ReturnValue int32
 }
 
 func init() {
@@ -120,11 +124,12 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
 	e := &grpc.Event{
-		PID:     event.PID,
-		TGID:    event.TGID,
-		UID:     event.UID,
-		GID:     event.GID,
-		Command: command,
+		PID:         event.PID,
+		TGID:        event.TGID,
+		UID:         event.UID,
+		GID:         event.GID,
+		Command:     command,
+		ReturnValue: event.ReturnValue,
 	}
 
 	return e, nil
