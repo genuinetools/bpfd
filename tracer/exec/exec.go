@@ -11,6 +11,7 @@ import (
 	"github.com/genuinetools/bpfd/proc"
 	"github.com/genuinetools/bpfd/tracer"
 	bpf "github.com/iovisor/gobpf/bcc"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -225,7 +226,7 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	}
 
 	if uid != event.UID {
-		return nil, fmt.Errorf("uid %d for process %d does not match the uid returned from bpf: %d", uid, event.PID, event.UID)
+		logrus.Warnf("[exec]: uid %d for process %d does not match the uid returned from bpf: %d", uid, event.PID, event.UID)
 	}
 
 	e := &grpc.Event{
