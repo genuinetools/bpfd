@@ -19,23 +19,27 @@ const (
 #include <uapi/linux/ptrace.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
+
 #define ARGSIZE  128
 #define MAXARG 20
+
 enum event_type {
     EVENT_ARG,
     EVENT_RET,
 };
-typedef struct {
+
+struct data_t {
     u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
 	u32 uid;
-	u32 gid;
     char comm[TASK_COMM_LEN];
     enum event_type type;
     char argv[ARGSIZE];
     int retval;
 } data_t;
+
 BPF_PERF_OUTPUT(events);
+
 static int __submit_arg(struct pt_regs *ctx, void *ptr, struct data_t *data)
 {
     bpf_probe_read(data->argv, sizeof(data->argv), ptr);
@@ -59,10 +63,9 @@ int syscall__execve(struct pt_regs *ctx,
 	u64 pid = bpf_get_current_pid_tgid();
 	u64 uid = bpf_get_current_uid_gid();
 
-	data_t data = {
+	struct data_t data = {
 		.pid = pid >> 32,
 		.uid = uid & 0xffffffff,
-		.gid = uid >> 32,
 	};
 
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
@@ -94,10 +97,9 @@ int do_ret_sys_execve(struct pt_regs *ctx)
 	u64 pid = bpf_get_current_pid_tgid();
 	u64 uid = bpf_get_current_uid_gid();
 
-	data_t data = {
+	struct data_t data = {
 		.pid = pid >> 32,
 		.uid = uid & 0xffffffff,
-		.gid = uid >> 32,
 	};
 
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
@@ -122,7 +124,6 @@ type execEvent struct {
 	PID         uint32
 	TGID        uint32
 	UID         uint32
-	GID         uint32
 	Comm        [16]byte
 	Type        int32
 	Argv        [128]byte
@@ -219,6 +220,7 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	e := &grpc.Event{
 		PID:  event.PID,
 		TGID: event.TGID,
+		UID:  event.UID,
 		Data: map[string]string{
 			"argv":      strings.Join(p.argv[event.PID], " "),
 			"command":   command,

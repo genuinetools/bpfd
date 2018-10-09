@@ -23,8 +23,6 @@ const (
 typedef struct {
     u32 pid;  // PID as in the userspace term (i.e. task->tgid in kernel)
     u32 tgid; // Parent PID as in the userspace term (i.e task->real_parent->tgid in kernel)
-	u32 uid;
-	u32 gid;
     int ret;
     char comm[TASK_COMM_LEN];
     char filename[NAME_MAX];
@@ -36,12 +34,9 @@ BPF_PERF_OUTPUT(events);
 int trace_entry(struct pt_regs *ctx, int dfd, const char __user *filename)
 {
 	u64 pid = bpf_get_current_pid_tgid();
-	u64 uid = bpf_get_current_uid_gid();
 
 	data_t data = {
 		.pid = pid >> 32,
-		.uid = uid & 0xffffffff,
-		.gid = uid >> 32,
 	};
 
     // Some kernels, like Ubuntu 4.13.0-generic, return 0
@@ -81,8 +76,6 @@ int trace_return(struct pt_regs *ctx)
 type openEvent struct {
 	PID         uint32
 	TGID        uint32
-	UID         uint32
-	GID         uint32
 	ReturnValue int32
 	Comm        [16]byte
 	Filename    [255]byte
@@ -172,8 +165,6 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	e := &grpc.Event{
 		PID:  event.PID,
 		TGID: event.TGID,
-		UID:  event.UID,
-		GID:  event.GID,
 		Data: map[string]string{
 			"filename":  filename,
 			"command":   command,

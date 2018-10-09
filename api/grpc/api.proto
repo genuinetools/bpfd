@@ -53,6 +53,8 @@ message Event {
   string containerID = 6; // Filled in after the tracer is run so you don't need to.
   string containerRuntime = 7; // Filled in after the tracer is run so you don't need to.
   string tracer = 8; // Filled in after the tracer is run so you don't need to.
+  uint64 returnValue = 9;
+  string command = 10;
 }
 
 message LiveTraceRequest {
