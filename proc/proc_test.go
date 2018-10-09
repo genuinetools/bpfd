@@ -426,8 +426,8 @@ nonvoluntary_ctxt_switches:     1`,
 func TestGetUIDGID(t *testing.T) {
 	testcases := map[string]struct {
 		name        string
-		expectedUID int32
-		expectedGID int32
+		expectedUID uint32
+		expectedGID uint32
 		input       string
 	}{
 		"empty": {},

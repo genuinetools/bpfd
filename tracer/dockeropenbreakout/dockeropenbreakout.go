@@ -173,9 +173,17 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 		return nil, nil
 	}
 
+	// Get the UID and GID.
+	uid, gid, err := proc.GetUIDGID(int(event.TGID), int(event.PID))
+	if err != nil {
+		return nil, fmt.Errorf("getting uid and gid for process %d failed: %v", event.PID, err)
+	}
+
 	e := &grpc.Event{
 		PID:         event.PID,
 		TGID:        event.TGID,
+		UID:         uid,
+		GID:         gid,
 		Command:     command,
 		ReturnValue: event.ReturnValue,
 		Data: map[string]string{

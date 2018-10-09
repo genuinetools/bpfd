@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/genuinetools/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/proc"
 	"github.com/genuinetools/bpfd/tracer"
 	bpf "github.com/iovisor/gobpf/bcc"
 )
@@ -217,10 +218,21 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	// Convert C string (null-terminated) to Go string
 	command := strings.TrimSpace(string(event.Comm[:bytes.IndexByte(event.Comm[:], 0)]))
 
+	// Get the UID and GID.
+	uid, gid, err := proc.GetUIDGID(int(event.TGID), int(event.PID))
+	if err != nil {
+		return nil, fmt.Errorf("getting uid and gid for process %d failed: %v", event.PID, err)
+	}
+
+	if uid != event.UID {
+		return nil, fmt.Errorf("uid %d for process %d does not match the uid returned from bpf: %d", uid, event.PID, event.UID)
+	}
+
 	e := &grpc.Event{
 		PID:         event.PID,
 		TGID:        event.TGID,
 		UID:         event.UID,
+		GID:         gid,
 		Command:     command,
 		ReturnValue: event.ReturnValue,
 		Data: map[string]string{
