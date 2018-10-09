@@ -137,7 +137,7 @@ func (cmd *daemonCommand) Run(ctx context.Context, args []string) error {
 		TracerList: tracerList,
 		ActionList: actionList,
 	}
-	svr, err := api.NewServer(opt)
+	svr, err := api.NewServer(ctx, opt)
 	if err != nil {
 		return fmt.Errorf("creating new api server failed: %v", err)
 	}

@@ -2,6 +2,7 @@ package bashreadline
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -96,7 +97,7 @@ func (p *bpftracer) Load() error {
 	return nil
 }
 
-func (p *bpftracer) WatchEvent() (*grpc.Event, error) {
+func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	var event readlineEvent
 	data := <-p.channel
 	err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event)

@@ -45,7 +45,7 @@ type Opts struct {
 }
 
 // NewServer returns grpc server instance.
-func NewServer(opt Opts) (grpc.APIServer, error) {
+func NewServer(ctx context.Context, opt Opts) (grpc.APIServer, error) {
 	server := &apiServer{
 		rules:      opt.Rules,
 		tracers:    opt.Tracers,
@@ -63,7 +63,7 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 		go func(p string, prog tracer.Tracer) {
 			for {
 				// Watch the events for the tracer.
-				event, err := prog.WatchEvent()
+				event, err := prog.WatchEvent(ctx)
 				if err != nil {
 					logrus.Warnf("watch event for tracer %s failed: %v", p, err)
 				}
@@ -72,7 +72,14 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 					continue
 				}
 
-				event.ContainerRuntime = string(proc.GetContainerRuntime(int(event.TGID), int(event.PID)))
+				// Get the container runtime if we don't already have it.
+				if len(event.ContainerRuntime) < 1 {
+					event.ContainerRuntime = string(proc.GetContainerRuntime(int(event.TGID), int(event.PID)))
+				}
+				// Get the container ID if we don't already have it.
+				if len(event.ContainerID) < 1 {
+					event.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
+				}
 				event.Tracer = p
 
 				progRules, _ := server.rules[p]
@@ -92,8 +99,6 @@ func NewServer(opt Opts) (grpc.APIServer, error) {
 						// We didn't find what we were searching for so continue.
 						continue
 					}
-
-					event.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
 
 					// Add this event to our queue of events if we are streaming.
 					server.addEvent(*event)

@@ -54,6 +54,8 @@ reverse engineer the data you are collecting and alerting on.
 
 The current compiled in tracers are:
 
+- [dockeropenbreakout](tracer/dockeropenbreakout): trace when files that are not
+    inside the container rootfs are being accessed
 - [bashreadline](tracer/bashreadline): trace commands being entered into
     the bash command line
 - [exec](tracer/exec): trace calls to exec binaries

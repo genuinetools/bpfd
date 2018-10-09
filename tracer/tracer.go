@@ -1,6 +1,7 @@
 package tracer
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/genuinetools/bpfd/api/grpc"
@@ -22,7 +23,7 @@ type Tracer interface {
 	// Unload closes the bpf module and all the probes that all attached to it.
 	Unload()
 	// WatchEvent defines the function to watch the events for the tracer.
-	WatchEvent() (*grpc.Event, error)
+	WatchEvent(context.Context) (*grpc.Event, error)
 	// Start starts the map for the tracer.
 	Start()
 	// String returns a string representation of this tracer.

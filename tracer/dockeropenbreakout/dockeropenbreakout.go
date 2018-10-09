@@ -1,4 +1,4 @@
-package open
+package dockeropenbreakout
 
 import (
 	"bytes"
@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/docker/docker/client"
 	"github.com/genuinetools/bpfd/api/grpc"
+	"github.com/genuinetools/bpfd/proc"
 	"github.com/genuinetools/bpfd/tracer"
 	bpf "github.com/iovisor/gobpf/bcc"
 )
 
 const (
-	name = "open"
+	name = "dockeropenbreakout"
 	// Mostly taken from: https://github.com/iovisor/bcc/blob/master/tools/opensnoop.py
 	source string = `
 #include <uapi/linux/ptrace.h>
@@ -86,15 +88,23 @@ func init() {
 }
 
 type bpftracer struct {
-	module  *bpf.Module
-	perfMap *bpf.PerfMap
-	channel chan []byte
+	module       *bpf.Module
+	perfMap      *bpf.PerfMap
+	channel      chan []byte
+	dockerClient *client.Client
 }
 
 // Init returns a new bashreadline tracer.
 func Init() (tracer.Tracer, error) {
+	// Create the docker client.
+	c, err := client.NewEnvClient()
+	if err != nil {
+		return nil, fmt.Errorf("creating docker client from env failed: %v", err)
+	}
+
 	return &bpftracer{
-		channel: make(chan []byte),
+		channel:      make(chan []byte),
+		dockerClient: c,
 	}, nil
 }
 
@@ -170,6 +180,39 @@ func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 			"command":   command,
 			"returnval": fmt.Sprintf("%d", event.ReturnValue),
 		}}
+
+	// Only include events from docker runtime.
+	e.ContainerRuntime = string(proc.GetContainerRuntime(int(event.TGID), int(event.PID)))
+	if e.ContainerRuntime != string(proc.RuntimeDocker) {
+		return nil, nil
+	}
+
+	// Get the container ID.
+	e.ContainerID = proc.GetContainerID(int(event.TGID), int(event.PID))
+
+	// Get information for the container mounts.
+	r, err := p.dockerClient.ContainerInspect(ctx, e.ContainerID)
+	if err != nil {
+		return nil, fmt.Errorf("getting container inspect information for %s container id %s failed: %v", e.ContainerRuntime, e.ContainerID, err)
+	}
+	// Collect all the mount information from the graph driver and actual mounts.
+	mounts := []string{}
+	switch r.GraphDriver.Name {
+	case "overlay":
+		// Data looks like:
+		// "Data": {
+		//        "LowerDir": "/var/lib/docker/overlay/7efc3ec24e158ef58ce4103b079b8dda6b6fbccf005e1f08dc63817a70340b0b/root",
+		//        "MergedDir": "/var/lib/docker/overlay/3606c689c896a921d4e076fd02a6743327767b1b3639ebc2bc8b6932536aa2c9/merged",
+		//        "UpperDir": "/var/lib/docker/overlay/3606c689c896a921d4e076fd02a6743327767b1b3639ebc2bc8b6932536aa2c9/upper",
+		//        "WorkDir": "/var/lib/docker/overlay/3606c689c896a921d4e076fd02a6743327767b1b3639ebc2bc8b6932536aa2c9/work"
+		//    },
+		// So iterate over it and add it to our mounts.
+		for _, v := range r.GraphDriver.Data {
+			mounts = append(mounts, v)
+		}
+	default:
+		return nil, fmt.Errorf("%s is an unsupported graphdriver for this tracer", r.GraphDriver.Name)
+	}
 
 	return e, nil
 }

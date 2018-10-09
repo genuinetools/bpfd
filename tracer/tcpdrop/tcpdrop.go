@@ -7,6 +7,7 @@ package tcpdrop
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -200,7 +201,7 @@ func (p *bpftracer) Load() error {
 	return nil
 }
 
-func (p *bpftracer) WatchEvent() (*grpc.Event, error) {
+func (p *bpftracer) WatchEvent(ctx context.Context) (*grpc.Event, error) {
 	var event tcpEvent
 	data := <-p.channel
 	if err := binary.Read(bytes.NewBuffer(data), binary.LittleEndian, &event); err != nil {
