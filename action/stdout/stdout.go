@@ -5,7 +5,6 @@ import (
 
 	"github.com/genuinetools/bpfd/action"
 	"github.com/genuinetools/bpfd/api/grpc"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -28,7 +27,7 @@ func (s *stdoutAction) String() string {
 }
 
 func (s *stdoutAction) Do(event *grpc.Event) error {
-	logrus.WithFields(logrus.Fields{
+	/*	logrus.WithFields(logrus.Fields{
 		"tracer":            event.Tracer,
 		"pid":               fmt.Sprintf("%d", event.PID),
 		"tgid":              fmt.Sprintf("%d", event.TGID),
@@ -38,7 +37,18 @@ func (s *stdoutAction) Do(event *grpc.Event) error {
 		"return_value":      fmt.Sprintf("%d", event.ReturnValue),
 		"container_runtime": string(event.ContainerRuntime),
 		"container_id":      event.ContainerID,
-	}).Infof("%#v", event.Data)
+	}).Infof("%#v", event.Data)*/
+
+	fmt.Printf("%s\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n",
+		event.Tracer,
+		event.PID,
+		event.TGID,
+		event.UID,
+		event.GID,
+		event.Command,
+		event.ContainerRuntime,
+		event.ContainerID,
+	)
 
 	return nil
 }

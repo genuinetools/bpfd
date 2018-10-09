@@ -422,3 +422,106 @@ nonvoluntary_ctxt_switches:     1`,
 		}
 	}
 }
+
+func TestGetUIDGID(t *testing.T) {
+	testcases := map[string]struct {
+		name        string
+		expectedUID int32
+		expectedGID int32
+		input       string
+	}{
+		"empty": {},
+		"none": {
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+		"one": {
+			input: `Name:   cat
+Umask:  0022
+State:  R (running)
+Tgid:   9314
+Ngid:   0
+Pid:    9314
+PPid:   23600
+TracerPid:      0
+Uid:    1000    1000    1000    1000
+Gid:    1000    1000    1000    1000
+FDSize: 256
+Groups: 24 25 27 29 30 44 46 101 102 106 111 1000 1001
+NStgid: 9314
+NSpid:  9314
+NSpgid: 9314`,
+			expectedUID: 1000,
+			expectedGID: 1000,
+		},
+		"zero": {
+			input: `Name:   systemd
+Umask:  0000
+State:  S (sleeping)
+Tgid:   1
+Ngid:   0
+Pid:    1
+PPid:   0
+TracerPid:      0
+Uid:    0       0       0       0
+Gid:    0       0       0       0
+FDSize: 256
+Groups:  `,
+		},
+		"invalid": {
+			input: `Name:   cat
+Threads:        1
+SigQ:   0/127546
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+SigCgt: 0000000000000000
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000003fffffffff
+CapAmb: 0000000000000000
+NoNewPrivs:     17
+Seccomp:        17
+Speculation_Store_Bypass:       vulnerable
+Cpus_allowed:   ff
+Cpus_allowed_list:      0-7
+Mems_allowed:   00000000,00000001
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        1
+nonvoluntary_ctxt_switches:     1`,
+		},
+	}
+
+	for key, tc := range testcases {
+		uid, gid, err := getUIDGID(tc.input)
+		if err != nil {
+			t.Errorf("[%s]: error %v", key, err)
+		}
+		if uid != tc.expectedUID {
+			t.Errorf("[%s]: expected uid %d, got %d", key, tc.expectedUID, uid)
+		}
+		if gid != tc.expectedGID {
+			t.Errorf("[%s]: expected gid %d, got %d", key, tc.expectedGID, gid)
+		}
+	}
+}

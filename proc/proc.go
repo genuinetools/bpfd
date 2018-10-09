@@ -281,6 +281,63 @@ func GetCapabilities(pid int) (map[string][]string, error) {
 	return allowedCaps, nil
 }
 
+// GetUIDGID returns the uid and gid for a process.
+// If pid is less than one, it returns the seccomp enforcing mode for "self".
+func GetUIDGID(tgid, pid int) (int32, int32, error) {
+	file := "/proc/self/status"
+	if pid > 0 {
+		if tgid > 0 {
+			file = fmt.Sprintf("/proc/%d/task/%d/status", tgid, pid)
+		} else {
+			file = fmt.Sprintf("/proc/%d/status", pid)
+		}
+	}
+
+	return getUIDGID(readFileString(file))
+}
+
+func getUIDGID(input string) (int32, int32, error) {
+	// Split status file string by line
+	statusMappings := strings.Split(input, "\n")
+	statusMappings = deleteEmpty(statusMappings)
+
+	var uid, gid string
+	for _, line := range statusMappings {
+		if strings.Contains(line, "Uid:") {
+			matches := statusFileValueRegex.FindStringSubmatch(line)
+			if len(matches) > 1 {
+				uid = matches[1]
+				continue
+			}
+		}
+		if strings.Contains(line, "Gid:") {
+			matches := statusFileValueRegex.FindStringSubmatch(line)
+			if len(matches) > 1 {
+				gid = matches[1]
+				continue
+			}
+		}
+		if len(uid) > 0 && len(gid) > 0 {
+			break
+		}
+	}
+
+	if len(uid) < 1 && len(gid) < 1 {
+		return 0, 0, nil
+	}
+
+	u, err := strconv.Atoi(strings.Split(strings.TrimSpace(uid), " ")[0])
+	if err != nil {
+		return 0, 0, err
+	}
+	g, err := strconv.Atoi(strings.Split(strings.TrimSpace(gid), " ")[0])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return int32(u), int32(g), nil
+}
+
 // GetSeccompEnforcingMode returns the seccomp enforcing level (disabled, filtering, strict)
 // for a process.
 // If pid is less than one, it returns the seccomp enforcing mode for "self".
