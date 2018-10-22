@@ -109,8 +109,8 @@ func GetContainerRuntime(tgid, pid int) ContainerRuntime {
 		return RuntimeOpenVZ
 	}
 
-	// __runsc_containers__ directory is present in gVisor containers.
-	if fileExists("__runsc_containers__") {
+	// /__runsc_containers__ directory is present in gVisor containers.
+	if fileExists("/__runsc_containers__") {
 		return RuntimeGVisor
 	}
 
