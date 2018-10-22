@@ -40,6 +40,8 @@ const (
 	RuntimeGarden ContainerRuntime = "garden"
 	// RuntimePodman is the string for the podman runtime.
 	RuntimePodman ContainerRuntime = "podman"
+	// RuntimeGVisor is the string for the gVisor (runsc) runtime.
+	RuntimeGVisor ContainerRuntime = "gvisor"
 	// RuntimeNotFound is the string for when no container runtime is found.
 	RuntimeNotFound ContainerRuntime = "not-found"
 
@@ -70,6 +72,7 @@ var (
 		RuntimeKubernetes,
 		RuntimeGarden,
 		RuntimePodman,
+		RuntimeGVisor,
 	}
 
 	seccompModes = map[string]SeccompMode{
@@ -104,6 +107,11 @@ func GetContainerRuntime(tgid, pid int) ContainerRuntime {
 	// /proc/vz exists in container and outside of the container, /proc/bc only outside of the container.
 	if fileExists("/proc/vz") && !fileExists("/proc/bc") {
 		return RuntimeOpenVZ
+	}
+
+	// __runsc_containers__ directory is present in gVisor containers.
+	if fileExists("__runsc_containers__") {
+		return RuntimeGVisor
 	}
 
 	a = os.Getenv("container")
