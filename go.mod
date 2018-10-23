@@ -14,6 +14,7 @@ require (
 	github.com/sirupsen/logrus v1.1.1
 	github.com/stevvooe/resumable v0.0.0-20180830230917-22b14a53ba50 // indirect
 	github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2
+	golang.org/x/lint v0.0.0-20181011164241-5906bd5c48cd // indirect
 	golang.org/x/net v0.0.0-20181005035420-146acd28ed58
 	golang.org/x/sys v0.0.0-20181005133103-4497e2df6f9e
 	google.golang.org/grpc v1.15.0
