@@ -42,6 +42,8 @@ const (
 	RuntimePodman ContainerRuntime = "podman"
 	// RuntimeGVisor is the string for the gVisor (runsc) runtime.
 	RuntimeGVisor ContainerRuntime = "gvisor"
+	// RuntimeFirejail is the string for the firejail runtime.
+	RuntimeFirejail ContainerRuntime = "firejail"
 	// RuntimeNotFound is the string for when no container runtime is found.
 	RuntimeNotFound ContainerRuntime = "not-found"
 
@@ -73,6 +75,7 @@ var (
 		RuntimeGarden,
 		RuntimePodman,
 		RuntimeGVisor,
+		RuntimeFirejail,
 	}
 
 	seccompModes = map[string]SeccompMode{
@@ -112,6 +115,15 @@ func GetContainerRuntime(tgid, pid int) ContainerRuntime {
 	// /__runsc_containers__ directory is present in gVisor containers.
 	if fileExists("/__runsc_containers__") {
 		return RuntimeGVisor
+	}
+
+	// firejail runs with `firejail` as pid 1.
+	// As firejail binary cannot be run with argv[0] != "firejail"
+	// it's okay to rely on cmdline.
+	a = readFileString("/proc/1/cmdline")
+	runtime = getContainerRuntime(a)
+	if runtime != RuntimeNotFound {
+		return runtime
 	}
 
 	a = os.Getenv("container")
