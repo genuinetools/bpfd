@@ -44,6 +44,8 @@ const (
 	RuntimeGVisor ContainerRuntime = "gvisor"
 	// RuntimeFirejail is the string for the firejail runtime.
 	RuntimeFirejail ContainerRuntime = "firejail"
+	// RuntimeWSL is the string for the Windows Subsystem for Linux runtime.
+	RuntimeWSL ContainerRuntime = "wsl"
 	// RuntimeNotFound is the string for when no container runtime is found.
 	RuntimeNotFound ContainerRuntime = "not-found"
 
@@ -76,6 +78,7 @@ var (
 		RuntimePodman,
 		RuntimeGVisor,
 		RuntimeFirejail,
+		RuntimeWSL,
 	}
 
 	seccompModes = map[string]SeccompMode{
@@ -124,6 +127,12 @@ func GetContainerRuntime(tgid, pid int) ContainerRuntime {
 	runtime = getContainerRuntime(a)
 	if runtime != RuntimeNotFound {
 		return runtime
+	}
+
+	// WSL has /proc/version_signature starting with "Microsoft".
+	a = readFileString("/proc/version_signature")
+	if strings.HasPrefix(a, "Microsoft") {
+		return RuntimeWSL
 	}
 
 	a = os.Getenv("container")
