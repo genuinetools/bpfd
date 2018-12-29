@@ -19,6 +19,21 @@ More use cases with examples coming soon... for now see [how it works](#how-it-w
 
 <!-- toc -->
 
+- [How it Works](#how-it-works)
+  * [Tracers](#tracers)
+  * [Rules](#rules)
+  * [Actions](#actions)
+- [Installation](#installation)
+    + [Binaries](#binaries)
+    + [Via Go](#via-go)
+    + [Via Docker](#via-docker)
+- [Usage](#usage)
+  * [Run the daemon](#run-the-daemon)
+  * [Create rules dynamically](#create-rules-dynamically)
+  * [Remove rules dynamically](#remove-rules-dynamically)
+  * [List active rules](#list-active-rules)
+  * [Live tracing events](#live-tracing-events)
+
 <!-- tocstop -->
 
 ## How it Works
