@@ -20,7 +20,7 @@ ifeq ($(GITCOMMIT),)
 endif
 CTIMEVAR=-X $(PKG)/version.GITCOMMIT=$(GITCOMMIT) -X $(PKG)/version.VERSION=$(VERSION)
 GO_LDFLAGS=-ldflags "-w $(CTIMEVAR)"
-GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -extldflags -static"
+GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR)"
 
 # Set our default go compiler
 GO := go

@@ -22,7 +22,7 @@ test-container: image-dev ## Run a command in a test container with all the need
 	@:$(call check_defined, CMD, command to run in the container)
 	docker run $(DOCKER_FLAGS) \
 		$(REGISTRY)/$(NAME):dev \
-		$(CMD)
+		"$(CMD)"
 
 GRPC_API_DIR=api/grpc
 .PHONY:protoc
