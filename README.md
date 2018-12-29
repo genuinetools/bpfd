@@ -17,20 +17,9 @@ More use cases with examples coming soon... for now see [how it works](#how-it-w
 
 **Table of Contents**
 
- * [How it Works](README.md#how-it-works)
-   * [Tracers](README.md#tracers)
-   * [Rules](README.md#rules)
-   * [Actions](README.md#actions)
- * [Installation](README.md#installation)
-      * [Binaries](README.md#binaries)
-      * [Via Go](README.md#via-go)
-      * [Via Docker](README.md#via-docker)
- * [Usage](README.md#usage)
-   * [Run the daemon](README.md#run-the-daemon)
-   * [Create rules dynamically](README.md#create-rules-dynamically)
-   * [Remove rules dynamically](README.md#remove-rules-dynamically)
-   * [List active rules](README.md#list-active-rules)
-   * [Live tracing events](README.md#live-tracing-events)
+<!-- toc -->
+
+<!-- tocstop -->
 
 ## How it Works
 
