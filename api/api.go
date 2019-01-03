@@ -82,7 +82,7 @@ func NewServer(ctx context.Context, opt Opts) (grpc.APIServer, error) {
 				}
 				event.Tracer = p
 
-				progRules, _ := server.rules[p]
+				progRules := server.rules[p]
 
 				if len(progRules) < 1 {
 					// Just send to stdout and be done with it.
