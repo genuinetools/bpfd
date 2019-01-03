@@ -410,12 +410,7 @@ func GetNoNewPrivileges(pid int) bool {
 }
 
 func getNoNewPrivileges(input string) bool {
-	nnp := getStatusEntry(input, "NoNewPrivs:")
-	if nnp == "1" {
-		return true
-	}
-
-	return false
+	return getStatusEntry(input, "NoNewPrivs:") == "1"
 }
 
 // GetCmdline returns the cmdline for a process.

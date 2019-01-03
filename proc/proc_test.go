@@ -6,7 +6,6 @@ import (
 
 func TestGetContainerIDAndRuntime(t *testing.T) {
 	testcases := map[string]struct {
-		name            string
 		expectedRuntime ContainerRuntime
 		expectedID      string
 		input           string
@@ -170,7 +169,6 @@ func TestGetUserMappings(t *testing.T) {
 
 func TestGetSeccompEnforceMode(t *testing.T) {
 	testcases := map[string]struct {
-		name          string
 		expectedModes []SeccompMode
 		input         string
 	}{
@@ -320,7 +318,6 @@ nonvoluntary_ctxt_switches:     1`,
 
 func TestGetNoNewPrivileges(t *testing.T) {
 	testcases := map[string]struct {
-		name     string
 		expected bool
 		input    string
 	}{
@@ -432,7 +429,6 @@ nonvoluntary_ctxt_switches:     1`,
 
 func TestGetUIDGID(t *testing.T) {
 	testcases := map[string]struct {
-		name        string
 		expectedUID uint32
 		expectedGID uint32
 		input       string
