@@ -95,7 +95,7 @@ type bpftracer struct {
 	dockerClient *client.Client
 }
 
-// Init returns a new bashreadline tracer.
+// Init returns a new dockerbreakout tracer.
 func Init() (tracer.Tracer, error) {
 	// Create the docker client.
 	c, err := client.NewEnvClient()
