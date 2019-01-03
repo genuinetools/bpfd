@@ -143,7 +143,7 @@ type bpftracer struct {
 	argv    map[uint32][]string
 }
 
-// Init returns a new bashreadline tracer.
+// Init returns a new exec tracer.
 func Init() (tracer.Tracer, error) {
 	return &bpftracer{
 		channel: make(chan []byte),

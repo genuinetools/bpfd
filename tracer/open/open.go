@@ -92,7 +92,7 @@ type bpftracer struct {
 	channel chan []byte
 }
 
-// Init returns a new bashreadline tracer.
+// Init returns a new open tracer.
 func Init() (tracer.Tracer, error) {
 	return &bpftracer{
 		channel: make(chan []byte),
