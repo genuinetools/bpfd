@@ -67,7 +67,7 @@ WORKDIR /go/src/github.com/genuinetools/bpfd
 RUN make \
 	&& mv bpfd /usr/bin/bpfd
 
-FROM debian:buster-slim
+FROM debian:stretch-slim
 
 # Add non-free apt sources
 RUN sed -i "s#deb http://deb.debian.org/debian buster main#deb http://deb.debian.org/debian buster main contrib non-free#g" /etc/apt/sources.list
