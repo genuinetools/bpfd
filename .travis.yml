@@ -3,7 +3,7 @@ sudo: true
 services:
   - docker
 go:
-  - 1.10.x
+  - 1.11.x
 jobs:
   include:
     - script: make test-container CMD="make all"
