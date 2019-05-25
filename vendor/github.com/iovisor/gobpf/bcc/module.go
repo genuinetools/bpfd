@@ -29,19 +29,20 @@ import (
 /*
 #cgo CFLAGS: -I/usr/include/bcc/compat
 #cgo LDFLAGS: -lbcc
-#include <bcc/bpf_common.h>
+#include <bcc/bcc_common.h>
 #include <bcc/libbpf.h>
 */
 import "C"
 
 // Module type
 type Module struct {
-	p           unsafe.Pointer
-	funcs       map[string]int
-	kprobes     map[string]int
-	uprobes     map[string]int
-	tracepoints map[string]int
-	perfEvents  map[string][]int
+	p              unsafe.Pointer
+	funcs          map[string]int
+	kprobes        map[string]int
+	uprobes        map[string]int
+	tracepoints    map[string]int
+	rawTracepoints map[string]int
+	perfEvents     map[string][]int
 }
 
 type compileRequest struct {
@@ -53,6 +54,15 @@ type compileRequest struct {
 const (
 	BPF_PROBE_ENTRY = iota
 	BPF_PROBE_RETURN
+)
+
+const (
+	XDP_FLAGS_UPDATE_IF_NOEXIST = uint32(1) << iota
+	XDP_FLAGS_SKB_MODE
+	XDP_FLAGS_DRV_MODE
+	XDP_FLAGS_HW_MODE
+	XDP_FLAGS_MODES = XDP_FLAGS_SKB_MODE | XDP_FLAGS_DRV_MODE | XDP_FLAGS_HW_MODE
+	XDP_FLAGS_MASK  = XDP_FLAGS_UPDATE_IF_NOEXIST | XDP_FLAGS_MODES
 )
 
 var (
@@ -85,17 +95,18 @@ func newModule(code string, cflags []string) *Module {
 	}
 	cs := C.CString(code)
 	defer C.free(unsafe.Pointer(cs))
-	c := C.bpf_module_create_c_from_string(cs, 2, (**C.char)(&cflagsC[0]), C.int(len(cflagsC)))
+	c := C.bpf_module_create_c_from_string(cs, 2, (**C.char)(&cflagsC[0]), C.int(len(cflagsC)), (C.bool)(true))
 	if c == nil {
 		return nil
 	}
 	return &Module{
-		p:           c,
-		funcs:       make(map[string]int),
-		kprobes:     make(map[string]int),
-		uprobes:     make(map[string]int),
-		tracepoints: make(map[string]int),
-		perfEvents:  make(map[string][]int),
+		p:              c,
+		funcs:          make(map[string]int),
+		kprobes:        make(map[string]int),
+		uprobes:        make(map[string]int),
+		tracepoints:    make(map[string]int),
+		rawTracepoints: make(map[string]int),
+		perfEvents:     make(map[string][]int),
 	}
 }
 
@@ -150,6 +161,12 @@ func (bpf *Module) Close() {
 	}
 }
 
+// GetProgramTag returns a tag for ebpf program under passed fd
+func (bpf *Module) GetProgramTag(fd int) (tag uint64, err error) {
+	_, err = C.bpf_prog_get_tag(C.int(fd), (*C.ulonglong)(unsafe.Pointer(&tag)))
+	return tag, err
+}
+
 // LoadNet loads a program of type BPF_PROG_TYPE_SCHED_ACT.
 func (bpf *Module) LoadNet(name string) (int, error) {
 	return bpf.Load(name, C.BPF_PROG_TYPE_SCHED_ACT, 0, 0)
@@ -163,6 +180,11 @@ func (bpf *Module) LoadKprobe(name string) (int, error) {
 // LoadTracepoint loads a program of type BPF_PROG_TYPE_TRACEPOINT
 func (bpf *Module) LoadTracepoint(name string) (int, error) {
 	return bpf.Load(name, C.BPF_PROG_TYPE_TRACEPOINT, 0, 0)
+}
+
+// LoadRawTracepoint loads a program of type BPF_PROG_TYPE_RAW_TRACEPOINT
+func (bpf *Module) LoadRawTracepoint(name string) (int, error) {
+	return bpf.Load(name, C.BPF_PROG_TYPE_RAW_TRACEPOINT, 0, 0)
 }
 
 // LoadPerfEvent loads a program of type BPF_PROG_TYPE_PERF_EVENT
@@ -205,7 +227,7 @@ func (bpf *Module) load(name string, progType int, logLevel, logSize uint) (int,
 		logBuf = make([]byte, logSize)
 		logBufP = (*C.char)(unsafe.Pointer(&logBuf[0]))
 	}
-	fd, err := C.bpf_prog_load(uint32(progType), nameCS, start, size, license, version, C.int(logLevel), logBufP, C.uint(len(logBuf)))
+	fd, err := C.bcc_prog_load(uint32(progType), nameCS, start, size, license, version, C.int(logLevel), logBufP, C.uint(len(logBuf)))
 	if fd < 0 {
 		return -1, fmt.Errorf("error loading BPF program: %v", err)
 	}
@@ -215,14 +237,14 @@ func (bpf *Module) load(name string, progType int, logLevel, logSize uint) (int,
 var kprobeRegexp = regexp.MustCompile("[+.]")
 var uprobeRegexp = regexp.MustCompile("[^a-zA-Z0-9_]")
 
-func (bpf *Module) attachProbe(evName string, attachType uint32, fnName string, fd int) error {
+func (bpf *Module) attachProbe(evName string, attachType uint32, fnName string, fd int, maxActive int) error {
 	if _, ok := bpf.kprobes[evName]; ok {
 		return nil
 	}
 
 	evNameCS := C.CString(evName)
 	fnNameCS := C.CString(fnName)
-	res, err := C.bpf_attach_kprobe(C.int(fd), attachType, evNameCS, fnNameCS, (C.uint64_t)(0))
+	res, err := C.bpf_attach_kprobe(C.int(fd), attachType, evNameCS, fnNameCS, (C.uint64_t)(0), C.int(maxActive))
 	C.free(unsafe.Pointer(evNameCS))
 	C.free(unsafe.Pointer(fnNameCS))
 
@@ -248,17 +270,17 @@ func (bpf *Module) attachUProbe(evName string, attachType uint32, path string, a
 }
 
 // AttachKprobe attaches a kprobe fd to a function.
-func (bpf *Module) AttachKprobe(fnName string, fd int) error {
+func (bpf *Module) AttachKprobe(fnName string, fd int, maxActive int) error {
 	evName := "p_" + kprobeRegexp.ReplaceAllString(fnName, "_")
 
-	return bpf.attachProbe(evName, BPF_PROBE_ENTRY, fnName, fd)
+	return bpf.attachProbe(evName, BPF_PROBE_ENTRY, fnName, fd, maxActive)
 }
 
 // AttachKretprobe attaches a kretprobe fd to a function.
-func (bpf *Module) AttachKretprobe(fnName string, fd int) error {
+func (bpf *Module) AttachKretprobe(fnName string, fd int, maxActive int) error {
 	evName := "r_" + kprobeRegexp.ReplaceAllString(fnName, "_")
 
-	return bpf.attachProbe(evName, BPF_PROBE_RETURN, fnName, fd)
+	return bpf.attachProbe(evName, BPF_PROBE_RETURN, fnName, fd, maxActive)
 }
 
 // AttachTracepoint attaches a tracepoint fd to a function
@@ -285,6 +307,26 @@ func (bpf *Module) AttachTracepoint(name string, fd int) error {
 		return fmt.Errorf("failed to attach BPF tracepoint: %v", err)
 	}
 	bpf.tracepoints[name] = int(res)
+	return nil
+}
+
+// AttachRawTracepoint attaches a raw tracepoint fd to a function
+// The 'name' argument is in the format 'name', there is no category
+func (bpf *Module) AttachRawTracepoint(name string, fd int) error {
+	if _, ok := bpf.rawTracepoints[name]; ok {
+		return nil
+	}
+
+	tpNameCS := C.CString(name)
+
+	res, err := C.bpf_attach_raw_tracepoint(C.int(fd), tpNameCS)
+
+	C.free(unsafe.Pointer(tpNameCS))
+
+	if res < 0 {
+		return fmt.Errorf("failed to attach BPF tracepoint: %v", err)
+	}
+	bpf.rawTracepoints[name] = int(res)
 	return nil
 }
 
@@ -465,6 +507,11 @@ func (bpf *Module) attachXDP(devName string, fd int, flags uint32) error {
 // AttachXDP attaches a xdp fd to a device.
 func (bpf *Module) AttachXDP(devName string, fd int) error {
 	return bpf.attachXDP(devName, fd, 0)
+}
+
+// AttachXDPWithFlags attaches a xdp fd to a device with flags.
+func (bpf *Module) AttachXDPWithFlags(devName string, fd int, flags uint32) error {
+	return bpf.attachXDP(devName, fd, flags)
 }
 
 // RemoveXDP removes any xdp from this device.

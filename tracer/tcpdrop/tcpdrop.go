@@ -183,7 +183,7 @@ func (p *bpftracer) Load() error {
 	}
 
 	tcp := "tcp_drop"
-	err = p.module.AttachKprobe(tcp, tcpKprobe)
+	err = p.module.AttachKprobe(tcp, tcpKprobe, -1)
 	if err != nil {
 		return fmt.Errorf("attach tcp_drop kprobe: %v", err)
 	}
@@ -193,7 +193,7 @@ func (p *bpftracer) Load() error {
 		return fmt.Errorf("load tcp_drop kretprobe failed: %v", err)
 	}
 
-	err = p.module.AttachKretprobe(tcp, tcpKretprobe)
+	err = p.module.AttachKretprobe(tcp, tcpKretprobe, -1)
 	if err != nil {
 		return fmt.Errorf("attach tcp_drop kretprobe: %v", err)
 	}

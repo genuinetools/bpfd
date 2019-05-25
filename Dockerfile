@@ -1,4 +1,4 @@
-FROM debian:buster-slim as builder
+FROM debian:stretch-slim as builder
 MAINTAINER Jessica Frazelle <jess@linux.com>
 
 ENV PATH /go/bin:/usr/local/go/bin:$PATH

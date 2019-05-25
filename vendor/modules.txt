@@ -36,7 +36,7 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/iovisor/gobpf v0.0.0-20181008194316-68e787d82275
+# github.com/iovisor/gobpf v0.0.0-20190329163444-e0d8d785d368
 github.com/iovisor/gobpf/bcc
 github.com/iovisor/gobpf/pkg/cpuonline
 # github.com/konsorten/go-windows-terminal-sequences v0.0.0-20180402223658-b729f2633dfe
